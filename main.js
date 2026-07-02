@@ -86,6 +86,117 @@ const introStory = document.getElementById("intro-story");
 const introName = document.getElementById("intro-name");
 const nameDisplay = document.getElementById("nameDisplay");
 const startBtn = document.getElementById("startBtn");
+const scanQrBtn = document.getElementById("scanQrBtn");
+
+/* ---------- intro: parallax background ----------
+   Mouse for desktop/browser preview; device-tilt for the actual touchscreen
+   kiosk, which has no mouse at all. If neither ever fires, the image just
+   stays centered — no error states, nothing else gated on this working. */
+const introBg = document.getElementById("introBg");
+const PARALLAX_MAX_SHIFT = 24; // px
+
+function setParallax(x, y) {
+  const dx = Math.max(-1, Math.min(1, x)) * PARALLAX_MAX_SHIFT;
+  const dy = Math.max(-1, Math.min(1, y)) * PARALLAX_MAX_SHIFT;
+  introBg.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+}
+
+window.addEventListener("mousemove", (event) => {
+  setParallax((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
+});
+
+function handleOrientation(event) {
+  if (event.gamma == null || event.beta == null) return;
+  setParallax(event.gamma / 30, (event.beta - 45) / 30);
+}
+
+let orientationBound = false;
+function bindDeviceOrientation() {
+  if (orientationBound || typeof DeviceOrientationEvent === "undefined") return;
+  orientationBound = true;
+  window.addEventListener("deviceorientation", handleOrientation);
+}
+
+// iOS requires an explicit user gesture to grant motion-sensor access —
+// piggyback on the first tap anywhere on the intro overlay. A silent no-op
+// (no prompt at all) on Android/desktop, where this API doesn't exist.
+introOverlay.addEventListener(
+  "click",
+  () => {
+    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+      DeviceOrientationEvent.requestPermission()
+        .then((state) => {
+          if (state === "granted") bindDeviceOrientation();
+        })
+        .catch(() => {});
+    } else {
+      bindDeviceOrientation();
+    }
+  },
+  { once: true }
+);
+
+/* ---------- intro: story sequence ----------
+   Auto-advancing narrative beats in a single reusable speech-bubble panel
+   (.story-bubble, same visual recipe as .ar-caption / Speech bubble.png).
+   Tapping the bubble skips the current wait immediately instead of making
+   an impatient visitor sit through the full hold. */
+const STORY_BEATS = [
+  "You are one of 9,200 residents living in Westhagen.",
+  "Walking through the square, you noticed something new — a cluster of wooden pallets that wasn't there before.",
+  "Beside them, a QR code. You scanned it.",
+];
+const STORY_BEAT_HOLD_MS = 3500;
+const STORY_BEAT_FADE_MS = 500;
+
+// Scattered across the screen (top/left as % of the intro-story section)
+// rather than stacked in one spot, so each beat reads like a caption placed
+// somewhere new over the illustration — matching the reference site.
+const STORY_POSITIONS = [
+  { top: "16%", left: "8%" },
+  { top: "58%", left: "54%" },
+  { top: "70%", left: "12%" },
+];
+
+const storyBubble = document.getElementById("storyBubble");
+let storyTimer = null;
+let storyBeatIdx = 0;
+let storyAdvancing = false;
+
+function showStoryBeat(i) {
+  storyBeatIdx = i;
+  storyBubble.textContent = STORY_BEATS[i];
+  const pos = STORY_POSITIONS[i];
+  storyBubble.style.top = pos.top;
+  storyBubble.style.left = pos.left;
+  requestAnimationFrame(() => storyBubble.classList.add("show"));
+  storyTimer = setTimeout(advanceStory, STORY_BEAT_HOLD_MS);
+}
+
+function advanceStory() {
+  if (storyAdvancing) return;
+  storyAdvancing = true;
+  clearTimeout(storyTimer);
+  storyBubble.classList.remove("show");
+  setTimeout(() => {
+    storyAdvancing = false;
+    if (storyBeatIdx + 1 < STORY_BEATS.length) {
+      showStoryBeat(storyBeatIdx + 1);
+    } else {
+      scanQrBtn.classList.remove("hidden");
+    }
+  }, STORY_BEAT_FADE_MS);
+}
+
+storyBubble.addEventListener("click", advanceStory);
+
+function startStorySequence() {
+  clearTimeout(storyTimer);
+  storyAdvancing = false;
+  scanQrBtn.classList.add("hidden");
+  storyBubble.classList.remove("show");
+  showStoryBeat(0);
+}
 
 const MAX_NAME_LEN = 16;
 let typedName = "";
@@ -112,9 +223,10 @@ function showIntro() {
   introName.classList.remove("active");
   introStory.classList.add("active");
   introOverlay.classList.remove("hidden");
+  startStorySequence();
 }
 
-document.getElementById("scanQrBtn").addEventListener("click", () => {
+scanQrBtn.addEventListener("click", () => {
   introStory.classList.remove("active");
   introName.classList.add("active");
   buildKeyboard(document.getElementById("onscreenKeyboard"), {
