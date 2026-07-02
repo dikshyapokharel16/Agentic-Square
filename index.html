@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Agentic Square</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,500;0,600;0,700;1,500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="styles.css" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js" defer></script>
+</head>
+<body>
+  <div id="intro-overlay">
+    <section id="intro-story" class="intro-screen active">
+      <div class="intro-content">
+        <p class="intro-eyebrow">Westhagen, today</p>
+        <p class="intro-copy">You are one of 9,200 residents living in Westhagen. Walking through the square, you noticed something new — a cluster of wooden pallets that wasn't there before. Beside them, a QR code. You scanned it.</p>
+        <button id="scanQrBtn" class="intro-btn">Enter the WhatsApp Group</button>
+      </div>
+    </section>
+    <section id="intro-name" class="intro-screen">
+      <div class="intro-content">
+        <p class="intro-copy">What should we call you?</p>
+        <div id="nameDisplay" class="name-display" data-placeholder="Type your name"></div>
+        <div id="onscreenKeyboard" class="keyboard"></div>
+        <button id="startBtn" class="intro-btn" disabled>Start</button>
+      </div>
+    </section>
+  </div>
+
+  <main class="split">
+    <section id="ar-panel">
+      <div id="viewer-root">
+        <p id="loading-message">Loading model…</p>
+      </div>
+      <div class="ar-caption" id="arCaption">
+        <p class="ar-caption-text" id="arCaptionText"></p>
+        <div class="ar-caption-actions">
+          <span class="ar-caption-hint">Tap to reply</span>
+          <button class="ar-caption-skip" id="arCaptionSkip">Skip</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="chat-panel" class="phone-wrap">
+      <div class="phone-frame">
+        <div class="screen">
+          <div class="statusbar">
+            <span id="phoneClock">08:00</span>
+            <div class="icons">
+              <i class="ti ti-antenna-bars-5" style="font-size:1em;"></i>
+              <i class="ti ti-wifi" style="font-size:1em;"></i>
+              <i class="ti ti-battery-3" style="font-size:1em;"></i>
+            </div>
+          </div>
+          <div class="waheader">
+            <i class="ti ti-arrow-left" style="font-size:1.3em;"></i>
+            <div class="avatar av-loci"></div>
+            <div class="meta">
+              <div class="title">Westhagen Marktplatz</div>
+              <div class="sub"><span id="memberCount">1,041 members</span></div>
+            </div>
+            <i class="ti ti-video" style="font-size:1.2em;"></i>
+            <i class="ti ti-phone" style="font-size:1.1em;"></i>
+          </div>
+          <div class="chatbody" id="chatbody"></div>
+          <div class="action-toast" id="actionToast">📍 Pointing your camera at the square would show exactly where each piece should be placed</div>
+          <div class="inputbar">
+            <div class="field" id="inputField"><i class="ti ti-mood-smile" style="font-size:1.1em;"></i><div class="field-text-wrap"><span class="field-text">Message</span></div></div>
+            <i class="ti ti-camera" style="font-size:1.3em; color:#54656f;"></i>
+            <i class="ti ti-microphone" style="font-size:1.3em; color:#fff; background:#008069; border-radius:50%; padding:6px;"></i>
+          </div>
+
+          <div class="reply-keyboard" id="replyKeyboard">
+            <div class="reply-field-row">
+              <div id="replyDisplay" class="reply-display" data-placeholder="Type a reply…"></div>
+              <button class="reply-send-btn" id="replySendBtn"><i class="ti ti-send"></i></button>
+            </div>
+            <div class="keyboard compact" id="replyKeyboardKeys"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>

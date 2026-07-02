@@ -1,0 +1,6 @@
+Drop this stage's exported, scale-corrected model files here as:
+  model.glb
+  model.usdz
+
+Pipeline: see ../../tools/README.md
+A poster.webp (chat preview image) is already in place for this stage.

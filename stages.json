@@ -1,0 +1,15 @@
+[
+  { "id": 0, "name": "Stage 0", "glb": "models/stage-00/model.glb", "usdz": "models/stage-00/model.usdz", "poster": "models/stage-00/poster.webp" },
+  { "id": 1, "name": "Stage 1", "glb": "models/stage-01/model.glb", "usdz": "models/stage-01/model.usdz", "poster": "models/stage-01/poster.webp" },
+  { "id": 2, "name": "Stage 2", "glb": "models/stage-02/model.glb", "usdz": "models/stage-02/model.usdz", "poster": "models/stage-02/poster.webp" },
+  { "id": 3, "name": "Stage 3", "glb": "models/stage-03/model.glb", "usdz": "models/stage-03/model.usdz", "poster": "models/stage-03/poster.webp" },
+  { "id": 4, "name": "Stage 4", "glb": "models/stage-04/model.glb", "usdz": "models/stage-04/model.usdz", "poster": "models/stage-04/poster.webp" },
+  { "id": 5, "name": "Stage 5", "glb": "models/stage-05/model.glb", "usdz": "models/stage-05/model.usdz", "poster": "models/stage-05/poster.webp" },
+  { "id": 6, "name": "Stage 6", "glb": null, "usdz": null, "poster": "models/stage-06/poster.webp" },
+  { "id": 7, "name": "Stage 7", "glb": null, "usdz": null, "poster": "models/stage-07/poster.webp" },
+  { "id": 8, "name": "Stage 8", "glb": null, "usdz": null, "poster": "models/stage-08/poster.webp" },
+  { "id": 9, "name": "Stage 9", "glb": null, "usdz": null, "poster": "models/stage-09/poster.webp" },
+  { "id": 10, "name": "Stage 10", "glb": null, "usdz": null, "poster": "models/stage-10/poster.webp" },
+  { "id": 11, "name": "Stage 11", "glb": null, "usdz": null, "poster": "models/stage-11/poster.webp" },
+  { "id": 12, "name": "Stage 12", "glb": null, "usdz": null, "poster": "models/stage-12/poster.webp" }
+]

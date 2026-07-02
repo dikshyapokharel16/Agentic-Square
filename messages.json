@@ -1,0 +1,1592 @@
+[
+  {
+    "type": "date",
+    "time": "08:00",
+    "text": "Monday"
+  },
+  {
+    "type": "system",
+    "time": "08:02",
+    "text": "You joined the group"
+  },
+  {
+    "type": "msg",
+    "sender": "{{name}}",
+    "time": "08:14",
+    "text": "Hey everyone! 🙋‍♀️ New here – scanned the QR on the new pallet benches by the tree and had to join. Love what you've done with them! What's cooking on the square? 👀",
+    "isMe": true
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:18",
+    "text": "Welcome, {{name}}! 👋 Glad the benches pulled you in 😄 Big news, actually – the neighbourhood just voted to put this year's leftover budget toward building a kids' play space together over the summer holidays. 76% said yes, so “Wolfsburg Plays!” is officially happening 🎉",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "{{name}}",
+    "time": "08:19",
+    "text": "Wait, hold on – am I actually talking to the *square* itself?? 😳 Didn't expect the square to start chatting back haha",
+    "isMe": true
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:20",
+    "text": "Yep, that's me.. think of me as one of the neighbours 😉",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:21",
+    "text": "We're right at the start of planning it now, so jump in whenever 🙌",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "userPrompt",
+    "time": "08:22",
+    "promptText": "What would you add to the square?",
+    "placeholder": "Type a reply…"
+  },
+  {
+    "type": "date",
+    "time": "09:00",
+    "text": "Tuesday"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:20",
+    "text": "Before we start planning anything – who's actually joining, and with how many kids? Quick poll, pick everything that applies to your household:",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
+  },
+  {
+    "type": "poll",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:21",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "question": "Who's in, and with whom?",
+    "options": [
+      "Toddler (under 3)",
+      "Kid (3–10)",
+      "Teenager (10+)",
+      "No kids, but happy to help anyway"
+    ],
+    "multi": true
+  },
+  {
+    "type": "system",
+    "time": "09:23",
+    "text": "Poll is open until tomorrow morning."
+  },
+  {
+    "type": "msg",
+    "sender": "Fatima",
+    "time": "14:32",
+    "text": "Just voted, two kids here, both 3-10",
+    "initial": "F",
+    "bg": "#2f5a8f",
+    "fg": "#e1ecf6"
+  },
+  {
+    "type": "msg",
+    "sender": "Aylin",
+    "time": "16:48",
+    "text": "Voted for toddler and kid, we're in with both",
+    "initial": "A",
+    "bg": "#6b3d8f",
+    "fg": "#ede2f6"
+  },
+  {
+    "type": "date",
+    "time": "08:51",
+    "text": "Wednesday"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:51",
+    "text": "Poll's closed! Looks like there's quite a crowd – around 280 kids are registered across all age groups. Don't worry, that doesn't mean all of them at once – realistically we should plan for about 30 kids being here at the same time. That's actually a really workable number to design around.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:54",
+    "text": "Alright, let's get into it then – what should we actually build here?",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🙌",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Jana",
+    "time": "10:17",
+    "text": "A sandbox would be great for the little ones, somewhere separate from the big kids running around 👶",
+    "initial": "J",
+    "bg": "#2f8f7a",
+    "fg": "#dff5f0",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 14
+      },
+      {
+        "emoji": "💡",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Aylin",
+    "time": "10:19",
+    "text": "With a toddler myself, I'd really love to be able to sit close by and actually watch her while she plays 👀",
+    "initial": "A",
+    "bg": "#6b3d8f",
+    "fg": "#ede2f6",
+    "reactions": [
+      {
+        "emoji": "🙋",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "10:21",
+    "text": "If we go with around 11m², that's room for roughly 5–6 toddlers playing there at once. I'll frame the edge with pallets, so there's a low seating border right around the sandbox itself – you'll be able to sit right there and watch her play.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 11
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "10:22",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "toddler sandbox (≈11m²) sketched in, framed by a low pallet seating border"
+  },
+  {
+    "type": "msg",
+    "sender": "Tetiana",
+    "time": "10:26",
+    "text": "Sounds perfect, the little ones really do need their own corner away from the bigger kids 😄",
+    "initial": "T",
+    "bg": "#8f2f5a",
+    "fg": "#f7e1ec",
+    "reactions": [
+      {
+        "emoji": "😄",
+        "count": 5
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Klaus",
+    "time": "11:48",
+    "text": "We've still got some leftover sand from the raised beds last year, that should help with the build 👍",
+    "initial": "K",
+    "bg": "#5a6b8f",
+    "fg": "#e6eaf5",
+    "reactions": [
+      {
+        "emoji": "♻️",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "11:51",
+    "text": "Nice, every bit we can reuse helps – keeps more of that budget free for other things.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Dorota",
+    "time": "13:42",
+    "text": "Let's also do sth for the bigger kids! Running and climbing, not just sitting and digging",
+    "initial": "D",
+    "bg": "#8f7a2f",
+    "fg": "#f7f1de",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 16
+      },
+      {
+        "emoji": "🏃",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Lukas",
+    "time": "13:57",
+    "text": "Definitely, and somewhere to hide too, my two are obsessed with hide and seek 🙈",
+    "initial": "L",
+    "bg": "#2f8f5a",
+    "fg": "#dff5e7",
+    "reactions": [
+      {
+        "emoji": "🙈",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Priya",
+    "time": "14:23",
+    "text": "And something to climb on please, otherwise it's just another flat square with a fence around it 😄",
+    "initial": "P",
+    "bg": "#8f3d3d",
+    "fg": "#f7e3e3",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "18:14",
+    "text": "Let's do one zone for the older kids then. Biggest share of our ~30 total, so 13-14 at once, around 90m²",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🙌",
+        "count": 22
+      },
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Oleksiy",
+    "time": "18:21",
+    "text": "Sounds good to me 👍",
+    "initial": "O",
+    "bg": "#6b8f2f",
+    "fg": "#eef5de",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "date",
+    "time": "08:42",
+    "text": "Thursday"
+  },
+  {
+    "type": "msg",
+    "sender": "Stefan",
+    "time": "08:42",
+    "text": "What about wood chips for the ground in there? Softer if someone trips while climbing or whatever",
+    "initial": "S",
+    "bg": "#4f6b99",
+    "fg": "#e3eaf5",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 12
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Claudia",
+    "time": "08:58",
+    "text": "Sounds good, but won't that just spread out everywhere without something holding it in? Tripping hazard along the edges otherwise 💀",
+    "initial": "C",
+    "bg": "#994f6b",
+    "fg": "#f5e3ea",
+    "reactions": [
+      {
+        "emoji": "😅",
+        "count": 8
+      },
+      {
+        "emoji": "👍",
+        "count": 5
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:14",
+    "text": "Good catch – a brick border around the edge would solve that, keeps the wood chips contained and gives the zone a clear boundary.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:16",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "brick border now frames the play zone, wood chips filled in"
+  },
+  {
+    "type": "msg",
+    "sender": "Aylin",
+    "time": "09:18",
+    "text": "One thing now that I can actually see the shape of it – is the sandbox going to end up right next to this? With both my little one and my older one, I can already picture all that running getting a bit much for her down there",
+    "initial": "A",
+    "bg": "#6b3d8f",
+    "fg": "#ede2f6",
+    "reactions": [
+      {
+        "emoji": "🙋",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:21",
+    "text": "Good call – let's give them a bit more breathing room. I'll shift the sandbox a little further along, away from the main zone.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 11
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:23",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "sandbox shifted further from the main play zone, more separation between the age groups"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:25",
+    "text": "Just so everyone knows going forward – I can only take on wishes that actually work with the materials and budget we've got.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "Elif",
+    "time": "11:21",
+    "text": "What about giving them somewhere to actually hide? Not just open space 🙈",
+    "initial": "E",
+    "bg": "#997a4f",
+    "fg": "#f5ecdf",
+    "reactions": [
+      {
+        "emoji": "💡",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Sabine",
+    "time": "11:36",
+    "text": "A low wall around part of it could work, gives a bit of a hideaway corner 🏰",
+    "initial": "S",
+    "bg": "#4f9999",
+    "fg": "#e0f3f3",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Marie",
+    "time": "11:52",
+    "text": "Or maybe a little labyrinth in the middle too, way more fun to get lost in than just a wall 😄",
+    "initial": "M",
+    "bg": "#3d7a8f",
+    "fg": "#e2f1f4",
+    "reactions": [
+      {
+        "emoji": "😄",
+        "count": 9
+      },
+      {
+        "emoji": "👍",
+        "count": 5
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "12:07",
+    "text": "Both work well together actually – a circular wall curving around one side for that retreat feel, and a labyrinth in the middle for more active hide-and-seek. Going circular also means nobody can run full-speed into a corner and get hurt.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 13
+      },
+      {
+        "emoji": "🎉",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "12:09",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "curved, low wall (no sharp corners) and central labyrinth added to the play zone – wall stays low enough for parents to see over it"
+  },
+  {
+    "type": "msg",
+    "sender": "Sabine",
+    "time": "12:14",
+    "text": "Speaking of watching them – is there somewhere proper to sit and actually keep an eye on things, or are we all just standing around all summer? 😄",
+    "initial": "S",
+    "bg": "#4f9999",
+    "fg": "#e0f3f3",
+    "reactions": [
+      {
+        "emoji": "😄",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "12:19",
+    "text": "Good shout – I'll add a curved pallet bench by the sandbox, and a second one over by the play zone, so there's always a proper seat with a clear view, whichever side you're on.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 14
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "12:21",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "two curved pallet benches added – one by the sandbox, one by the main play zone, each with a clear view for parents"
+  },
+  {
+    "type": "msg",
+    "sender": "Aryan",
+    "time": "14:18",
+    "text": "And climbing too, that was the other big wish right? Maybe something at the other edge",
+    "initial": "A",
+    "bg": "#b35c3d",
+    "fg": "#fae6dd",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 12
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Jens",
+    "time": "14:33",
+    "text": "Like a wall they can climb up and jump off? My kids love that kind of thing 😎",
+    "initial": "J",
+    "bg": "#5a8f3d",
+    "fg": "#eef6e2",
+    "reactions": [
+      {
+        "emoji": "😎",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Soraya",
+    "time": "14:51",
+    "text": "And maybe a small climbing frame too, we've still got loads of pallets sitting in storage, and I've actually seen something like that built before somewhere else, just keep it low for the little ones",
+    "initial": "S",
+    "bg": "#c9912e",
+    "fg": "#fcf1da",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "15:09",
+    "text": "Got it – a jumping wall on the other side for the older kids, plus a small, low pallet climbing frame for the little ones. Should cover both age groups well.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 11
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "15:11",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "jumping wall and low pallet climbing frame added on the opposite edge"
+  },
+  {
+    "type": "msg",
+    "sender": "Heike",
+    "time": "17:12",
+    "text": "After all that running around they're gonna want somewhere to just sit for a sec too 😅",
+    "initial": "H",
+    "bg": "#8f4b6b",
+    "fg": "#f7e6ec",
+    "reactions": [
+      {
+        "emoji": "😅",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Ines",
+    "time": "17:27",
+    "text": "Yeah, maybe something built right into the play area itself, not just benches on the side 💡",
+    "initial": "I",
+    "bg": "#3d6b5c",
+    "fg": "#dcece6",
+    "reactions": [
+      {
+        "emoji": "💡",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Karin",
+    "time": "17:43",
+    "text": "Like little brick steps or blocks they can perch on, something solid",
+    "initial": "K",
+    "bg": "#2f7d4f",
+    "fg": "#e1f4e7",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "system",
+    "time": "17:50",
+    "text": "Annika joined the group."
+  },
+  {
+    "type": "msg",
+    "sender": "Annika",
+    "time": "17:52",
+    "text": "Just found this group, this is amazing! 😍 I've got two little ones who'd love to join in once it's all built",
+    "initial": "A",
+    "bg": "#a8527a",
+    "fg": "#fbe5ee",
+    "reactions": [
+      {
+        "emoji": "👋",
+        "count": 14
+      },
+      {
+        "emoji": "❤️",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "17:54",
+    "text": "Welcome, Annika! Glad to have you join in 👋",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👋",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "17:58",
+    "text": "We can build a fixed seating structure out of small bricks then, right at the edge of the play area, perfect for the kids to perch on for a quick breather mid-game.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "18:01",
+    "text": "If we keep that around 20m², that's room for maybe 3-4 kids at once.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "18:02",
+    "text": "That actually covers most of our ~30 kids now – toddlers in the sandbox, and the older half spread across the main zone. Just the teenagers without a spot of their own so far.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 24
+      },
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "18:03",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "low brick perches for the kids added along the edge of the play zone"
+  },
+  {
+    "type": "msg",
+    "sender": "Susanne",
+    "time": "19:32",
+    "text": "Could we get a table tennis table too? Always such a hit 🏓",
+    "initial": "S",
+    "bg": "#6b3d5c",
+    "fg": "#ecdce6",
+    "reactions": [
+      {
+        "emoji": "🏓",
+        "count": 11
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Sven",
+    "time": "19:47",
+    "text": "Yes please, last year's was constantly taken, I never even got a turn myself",
+    "initial": "S",
+    "bg": "#534ab7",
+    "fg": "#eeedfe",
+    "reactions": [
+      {
+        "emoji": "😅",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Frank",
+    "time": "20:02",
+    "text": "Then let's just do two this time, way less fighting over it 😂",
+    "initial": "F",
+    "bg": "#8f6b2f",
+    "fg": "#f6eddc",
+    "reactions": [
+      {
+        "emoji": "😂",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:15",
+    "text": "Two tables it is. I'll put them on the paved area, away from the little ones so the balls don't end up in the sandbox. That's actually the last piece – toddlers, kids, and now teenagers all have something here.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:17",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "paved area with two table tennis tables – all age groups now covered"
+  },
+  {
+    "type": "msg",
+    "sender": "Aryan",
+    "time": "20:18",
+    "text": "Looks great, only thing I'd say is move the table tennis tables a bit further from the sandbox, balls might still end up close",
+    "initial": "A",
+    "bg": "#b35c3d",
+    "fg": "#fae6dd",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:19",
+    "text": "Good point – I'll shift them further along the paved area, more buffer between the two.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:20",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "table tennis tables shifted further from the sandbox"
+  },
+  {
+    "type": "date",
+    "time": "09:16",
+    "text": "Friday"
+  },
+  {
+    "type": "msg",
+    "sender": "{{name}}",
+    "time": "09:16",
+    "text": "Been quietly following all of this, you guys come up with really cool stuff! Kind of exciting watching it all come together 👀",
+    "isMe": true
+  },
+  {
+    "type": "msg",
+    "sender": "{{name}}",
+    "time": "09:31",
+    "text": "As someone without kids myself though, I'd love some nice seating for the rest of us too, not just the parents on bench duty – maybe more pallets with some greenery mixed in, like the ones under the tree 🌿",
+    "isMe": true
+  },
+  {
+    "type": "msg",
+    "sender": "Mariia",
+    "time": "09:49",
+    "text": "Love that, could even be something the kids help plant themselves, like a little activity on its own 🌱",
+    "initial": "M",
+    "bg": "#185fa5",
+    "fg": "#e6f1fb",
+    "reactions": [
+      {
+        "emoji": "🌱",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "10:24",
+    "text": "Good thing it's mostly pallets we already have – easy on the budget. The two benches already cover keeping an eye on the kids, so this one's just for atmosphere. I'll bring in some planters too.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "10:26",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "pallet-and-planter seating added around the square"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:48",
+    "text": "I think I've got enough now to put a first full layout together. Give me until tomorrow, I'll share it as soon as it's ready 👀",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👀",
+        "count": 18
+      },
+      {
+        "emoji": "🔥",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "date",
+    "time": "09:02",
+    "text": "Saturday"
+  },
+  {
+    "type": "file",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:02",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "fileName": "WESTHAGENPLAYS!_DRAFT.pdf",
+    "fileSub": "PDF document"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:03",
+    "text": "Morning everyone! Pulled it all together overnight – here's the first full layout. Let me know what you think!",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "😍",
+        "count": 160
+      },
+      {
+        "emoji": "❤️",
+        "count": 85
+      },
+      {
+        "emoji": "🎉",
+        "count": 110
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Dorota",
+    "time": "09:14",
+    "text": "Wow, this looks amazing, can't believe it's all coming together this fast 😍",
+    "initial": "D",
+    "bg": "#8f7a2f",
+    "fg": "#f7f1de",
+    "reactions": [
+      {
+        "emoji": "😍",
+        "count": 11
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Priya",
+    "time": "09:26",
+    "text": "The little hideaway corner with the wall is such a nice touch ✨",
+    "initial": "P",
+    "bg": "#8f3d3d",
+    "fg": "#f7e3e3",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Aryan",
+    "time": "09:39",
+    "text": "Looks great, the climbing wall especially – my two are going to be straight over there 😄",
+    "initial": "A",
+    "bg": "#b35c3d",
+    "fg": "#fae6dd",
+    "reactions": [
+      {
+        "emoji": "😄",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Nicole",
+    "time": "10:05",
+    "text": "Honestly didn't expect this much detail already, nice one 👏",
+    "initial": "N",
+    "bg": "#5c8fb3",
+    "fg": "#e3eff5",
+    "reactions": [
+      {
+        "emoji": "👏",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Younes",
+    "time": "10:18",
+    "text": "This is gonna be a great summer ☀️",
+    "initial": "Y",
+    "bg": "#854f0b",
+    "fg": "#faeeda",
+    "reactions": [
+      {
+        "emoji": "☀️",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Fatima",
+    "time": "13:31",
+    "text": "One more thought, could we maybe leave a small pile of loose bricks somewhere, just for the kids to build and stack themselves? 🧱",
+    "initial": "F",
+    "bg": "#2f5a8f",
+    "fg": "#e1ecf6",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 15
+      },
+      {
+        "emoji": "😄",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Lukas",
+    "time": "13:45",
+    "text": "Yes, that kind of free building is honestly half the fun for them 😄",
+    "initial": "L",
+    "bg": "#2f8f5a",
+    "fg": "#dff5e7",
+    "reactions": [
+      {
+        "emoji": "😄",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Anja",
+    "time": "13:59",
+    "text": "Could just go in a corner near the main area, doesn't need its own zone 👍",
+    "initial": "A",
+    "bg": "#6b8f99",
+    "fg": "#e3eff0",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Dorota",
+    "time": "14:04",
+    "text": "They can make their own toys, basically 😄",
+    "initial": "D",
+    "bg": "#8f7a2f",
+    "fg": "#f7f1de",
+    "reactions": [
+      {
+        "emoji": "😄",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Stefan",
+    "time": "14:08",
+    "text": "My kid's a little architect already! He's going to love this 🏗️",
+    "initial": "S",
+    "bg": "#4f6b99",
+    "fg": "#e3eaf5",
+    "reactions": [
+      {
+        "emoji": "🏗️",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "14:13",
+    "text": "Easy addition – I'll add a small loose-brick corner right next to the play area for free building.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "14:16",
+    "text": "Let me fold all that into an updated version real quick 👨‍🔧",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "14:19",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "loose-brick corner for free building added next to the play zone"
+  },
+  {
+    "type": "msg",
+    "sender": "Heike",
+    "time": "15:32",
+    "text": "Looking at it again, the open part of the square still feels pretty bare somehow. And there's basically no shade anywhere either",
+    "initial": "H",
+    "bg": "#8f4b6b",
+    "fg": "#f7e6ec"
+  },
+  {
+    "type": "msg",
+    "sender": "Marie",
+    "time": "15:35",
+    "text": "Yeah, in the middle of summer that whole stretch is going to be brutal in direct sun",
+    "initial": "M",
+    "bg": "#3d7a8f",
+    "fg": "#e2f1f4"
+  },
+  {
+    "type": "msg",
+    "sender": "Petra",
+    "time": "15:38",
+    "text": "Especially right by the sandbox, toddlers really shouldn't be sitting in full sun for long",
+    "initial": "P",
+    "bg": "#993556",
+    "fg": "#fbeaf0"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "15:42",
+    "text": "Good point, all of you – I'll add a few more pallet planters with trees, placed right next to the play elements themselves so they're actually shaded, not just nearby.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "Karin",
+    "time": "15:43",
+    "text": "Smart, mine completely wilt by mid-afternoon in summer 😅",
+    "initial": "K",
+    "bg": "#2f7d4f",
+    "fg": "#e1f4e7"
+  },
+  {
+    "type": "image",
+    "sender": "Westhagen Marktplatz",
+    "time": "15:46",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "caption": "pallet planters with young trees added directly alongside the play elements for shade"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "16:05",
+    "text": "I'll leave this open until this evening in case anyone's got anything else to add.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:42",
+    "text": "Okay, looks like we've landed on a result. Let's make this official and vote on the design:",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 14
+      }
+    ]
+  },
+  {
+    "type": "poll",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:43",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "question": "Official vote: do we approve this as the final design for the square?",
+    "options": [
+      "Yes, let's build it!",
+      "No, it still needs changes"
+    ]
+  },
+  {
+    "type": "system",
+    "time": "20:45",
+    "text": "Poll is open until Monday."
+  },
+  {
+    "type": "date",
+    "time": "09:18",
+    "text": "Monday"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:18",
+    "text": "Poll's closed – strong yes, 598 of 1,042 voted, 94% in favor. The layout is locked in 🎉",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 350
+      },
+      {
+        "emoji": "🙌",
+        "count": 190
+      },
+      {
+        "emoji": "❤️",
+        "count": 100
+      }
+    ]
+  },
+  {
+    "type": "file",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:19",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "fileName": "WESTHAGENPLAYS!_FINAL.pdf",
+    "fileSub": "PDF document"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:19",
+    "text": "Here's the finished design, print-ready 📄",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "file",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:20",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "fileName": "WESTHAGENPLAYS!_BUILD_MANUAL.pdf",
+    "fileSub": "PDF document"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:20",
+    "text": "...and here's the build manual – step-by-step instructions for putting together the playground 🛠️",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🙌",
+        "count": 22
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:23",
+    "text": "Heads up though – this still needs to get approved by the city. I'll be in touch the moment everything's ready.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "09:26",
+    "text": "Not too worried about the budget part, though – we recycled a lot and barely touched it. Should be enough left for at least one more event later this year 🎉",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 14
+      },
+      {
+        "emoji": "👍",
+        "count": 8
+      }
+    ]
+  },
+  {
+    "type": "date",
+    "time": "08:44",
+    "text": "Monday"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:44",
+    "text": "Update: permit's through, materials are in 👍 and I've pencilled in Saturday, July 1st, for the build.",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 220
+      },
+      {
+        "emoji": "🙌",
+        "count": 120
+      },
+      {
+        "emoji": "👍",
+        "count": 90
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:46",
+    "text": "Here's what we'll actually need hands for on the day, and roughly how many for each:",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  },
+  {
+    "type": "poll",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:47",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "question": "What could you help with on the day?",
+    "options": [
+      "Brickwork",
+      "Pallet & wood building",
+      "Spreading sand & wood chips",
+      "Planting & greenery",
+      "Hauling & transport",
+      "Food & drinks",
+      "Keeping the kids busy"
+    ],
+    "multi": true,
+    "needed": [
+      8,
+      6,
+      5,
+      4,
+      5,
+      6,
+      6
+    ]
+  },
+  {
+    "type": "system",
+    "time": "08:49",
+    "text": "Poll is open for the rest of the week."
+  },
+  {
+    "type": "msg",
+    "sender": "Klaus",
+    "time": "09:12",
+    "text": "Signed up for brickwork, done enough of that by now 😄",
+    "initial": "K",
+    "bg": "#5a6b8f",
+    "fg": "#e6eaf5"
+  },
+  {
+    "type": "msg",
+    "sender": "Birgit",
+    "time": "09:26",
+    "text": "I'll take food and drinks, someone has to keep people fed 🥪",
+    "initial": "B",
+    "bg": "#993c1d",
+    "fg": "#fae8e0",
+    "reactions": [
+      {
+        "emoji": "🥪",
+        "count": 6
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Stefan",
+    "time": "09:41",
+    "text": "Hauling for me, bringing the trailer again",
+    "initial": "S",
+    "bg": "#4f6b99",
+    "fg": "#e3eaf5"
+  },
+  {
+    "type": "msg",
+    "sender": "Elif",
+    "time": "12:18",
+    "text": "Putting myself down for planting, could use the excuse to finally get my hands dirty 🌿",
+    "initial": "E",
+    "bg": "#997a4f",
+    "fg": "#f5ecdf"
+  },
+  {
+    "type": "msg",
+    "sender": "Tetiana",
+    "time": "15:53",
+    "text": "I'll help keep the kids entertained while the adults are busy building 🙂",
+    "initial": "T",
+    "bg": "#8f2f5a",
+    "fg": "#f7e1ec"
+  },
+  {
+    "type": "msg",
+    "sender": "Jana",
+    "time": "18:07",
+    "text": "Can't make the day itself, but signed up to drop off materials beforehand 📦",
+    "initial": "J",
+    "bg": "#2f8f7a",
+    "fg": "#dff5f0"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "20:31",
+    "text": "Looking solid across the board already, thanks for jumping in 🙌",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👏",
+        "count": 28
+      },
+      {
+        "emoji": "🙌",
+        "count": 14
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "{{name}}",
+    "time": "20:38",
+    "text": "Sign me up for whatever's still needed, just excited to finally meet everyone in person after weeks of chatting here 😍😍",
+    "isMe": true
+  },
+  {
+    "type": "date",
+    "time": "08:30",
+    "text": "Saturday"
+  },
+  {
+    "type": "event",
+    "time": "08:30",
+    "text": "📅 Building Day!"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:30",
+    "text": "Morning, everyone! Hope you're all feeling motivated – let's get this built 🙌",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 48
+      },
+      {
+        "emoji": "💪",
+        "count": 31
+      }
+    ]
+  },
+  {
+    "type": "msg",
+    "sender": "Klaus",
+    "time": "08:32",
+    "text": "Been looking forward to this all week, let's go! 💪",
+    "initial": "K",
+    "bg": "#5a6b8f",
+    "fg": "#e6eaf5"
+  },
+  {
+    "type": "msg",
+    "sender": "Birgit",
+    "time": "08:33",
+    "text": "So excited, see you all there ☀️",
+    "initial": "B",
+    "bg": "#993c1d",
+    "fg": "#fae8e0"
+  },
+  {
+    "type": "msg",
+    "sender": "Tetiana",
+    "time": "08:35",
+    "text": "Can't wait to see it all come together today!",
+    "initial": "T",
+    "bg": "#8f2f5a",
+    "fg": "#f7e1ec"
+  },
+  {
+    "type": "msg",
+    "sender": "Westhagen Marktplatz",
+    "time": "08:38",
+    "text": "One more thing – if anyone's unsure exactly where a piece goes, point your phone at the square and it'll show you where everything lines up:",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea"
+  }
+]
