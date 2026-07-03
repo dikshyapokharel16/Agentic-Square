@@ -39,7 +39,8 @@ issue.
 
 ## `.usdz` (iOS)
 
-Requires Python with the `usd-core` package: `pip install usd-core`.
+Requires Python with the `usd-core` and `Pillow` packages:
+`pip install usd-core Pillow`.
 
 ```
 python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.04556
@@ -58,6 +59,14 @@ python inspect-usdz.py ../models/stage-NN/model.usdz
 which prints both the baked-in scale op and the actual world-space size in
 meters — check the size is ~1.8m on the longest side, don't just trust the
 factor number.
+
+**This script also resizes/re-encodes textures** the same way the `.glb`
+script does — 2048x2048 max, and any opaque (no-alpha) PNG gets converted to
+JPEG (USDZ/RealityKit doesn't support WebP, unlike `<model-viewer>`/three.js).
+One stage-00 re-export went from 22.7MB of textures to 3.4MB with no visible
+quality loss. Converting format means the USD material's texture references
+get rewired automatically to the new filename — this happens in-script, you
+don't need to do anything extra.
 
 ## Ambient occlusion
 
