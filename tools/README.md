@@ -28,6 +28,15 @@ pass `0.0114` to match the current room-scale sizing used for stages 00-03.
 Verify with `node inspect-glb.mjs ../models/stage-NN/model.glb` (prints material
 info, not size) or check bounds by eye in a viewer — target is ~1.8m longest side.
 
+**This script also resizes/re-encodes textures (2048x2048 max, WebP).**
+SketchUp/Blender exports have shown up with textures as large as 11811x11811
+px — geometry (Draco-compressed) is not the size problem for these models,
+textures are. One stage-00 re-export was 22.8MB before this step, 2.2MB after,
+with no visible quality loss at AR viewing distance on a ~1.8m model. If a
+model looks unusually slow to load, check texture dimensions with the inline
+inspection snippet in `inspect-glb.mjs`'s style before assuming it's a network
+issue.
+
 ## `.usdz` (iOS)
 
 Requires Python with the `usd-core` package: `pip install usd-core`.

@@ -1,7 +1,8 @@
 import { NodeIO } from "@gltf-transform/core";
-import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
-import { draco } from "@gltf-transform/functions";
+import { KHRDracoMeshCompression, EXTTextureWebP } from "@gltf-transform/extensions";
+import { draco, textureCompress } from "@gltf-transform/functions";
 import draco3d from "draco3dgltf";
+import sharp from "sharp";
 
 const [, , inPath, outPath, factorArg] = process.argv;
 const factor = factorArg ? parseFloat(factorArg) : 0.05;
@@ -12,7 +13,7 @@ if (!inPath) {
 }
 
 const io = new NodeIO()
-  .registerExtensions([KHRDracoMeshCompression])
+  .registerExtensions([KHRDracoMeshCompression, EXTTextureWebP])
   .registerDependencies({
     "draco3d.encoder": await draco3d.createEncoderModule(),
     // Needed to *read* input that's already Draco-compressed (e.g. re-running
@@ -33,9 +34,16 @@ for (const scene of root.listScenes()) {
   }
 }
 
+// SketchUp/Blender exports have been coming in with absurdly oversized
+// textures (11811x11811 seen in practice) that dwarf geometry as the actual
+// size cost. Resize to a cap that's still sharp up close on a ~1.8m AR model
+// viewed on a phone/tablet screen, and convert to WebP — model-viewer/three.js
+// support EXT_texture_webp natively, and it compresses far better than PNG
+// for this kind of photographic texture (~90% smaller in practice).
+await document.transform(textureCompress({ encoder: sharp, resize: [2048, 2048], targetFormat: "webp", quality: 82 }));
+
 // Draco-compress the geometry — model-viewer/three.js decode this natively,
-// so it's a safe, broadly-compatible way to shrink file size (mesh/vertex
-// data is the dominant contributor to size for these models, not textures).
+// so it's a safe, broadly-compatible way to shrink file size.
 await document.transform(draco({ method: "edgebreaker" }));
 
 const out = outPath || inPath;
