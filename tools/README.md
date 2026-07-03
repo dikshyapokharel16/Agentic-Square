@@ -4,8 +4,16 @@ SketchUp/Blender exports for this project come in ~20x oversized. Run each raw
 export through the matching script before dropping it into `demo/models/stage-NN/`.
 
 The model is sized to fit a 2m x 2m room (longest side ~1.8m, with a small
-margin for AR tracking drift), which works out to an absolute factor of
-`0.0114` (divide by ~88) from the raw export.
+margin for AR tracking drift).
+
+**Important: `.glb` and `.usdz` need different factor values.** They're
+independent exports (the `.usdz` pipeline had its own prior scale-correction
+of `0.2` baked in, vs `0.05` for `.glb`), so the same raw model produces a
+different absolute factor per format. Always verify the *actual* resulting
+size with the inspect scripts below rather than assuming a factor carries
+over between formats — this exact mismatch previously caused the `.usdz`
+files to never get the room-scale fix that `.glb` got, breaking AR on iOS
+while Android looked fine.
 
 ## `.glb` (Android)
 
@@ -16,17 +24,76 @@ node fix-glb-scale.mjs <raw.glb> ../models/stage-NN/model.glb 0.0114
 ```
 
 Optional third argument overrides the default factor of `0.05` (i.e. divide by 20) —
-pass `0.0114` to match the current room-scale sizing used for stages 00-05.
+pass `0.0114` to match the current room-scale sizing used for stages 00-03.
+Verify with `node inspect-glb.mjs ../models/stage-NN/model.glb` (prints material
+info, not size) or check bounds by eye in a viewer — target is ~1.8m longest side.
 
 ## `.usdz` (iOS)
 
 Requires Python with the `usd-core` package: `pip install usd-core`.
 
 ```
-python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.0114
+python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.04556
 ```
 
-Add `--factor 0.0114` explicitly to match the current room-scale sizing (default is `0.05`).
+`--factor` here is an **absolute** scale on the raw export (not a multiplier
+on the current file, unlike the `.glb` script) — `0.04556` is what currently
+gets stages 00-03 to the same ~1.8m longest side as their `.glb` counterparts,
+but if a new raw `.usdz` export starts from a different native scale, this
+number won't automatically be right. Always confirm with:
+
+```
+python inspect-usdz.py ../models/stage-NN/model.usdz
+```
+
+which prints both the baked-in scale op and the actual world-space size in
+meters — check the size is ~1.8m on the longest side, don't just trust the
+factor number.
+
+## Ambient occlusion
+
+There are currently 4 stages (`stage-00`…`stage-03`). Each will eventually be
+replaced by a new Blender export with baked ambient occlusion. `<model-viewer>`
+(three.js under the hood) already respects glTF's `occlusionTexture` material
+slot natively — no site code changes needed, only new textures in the `.glb`.
+
+Per model, in Blender:
+
+1. Make sure the model has UVs (unwrap if the raw export doesn't have them).
+2. Switch to Cycles, create a new bake-target image texture, select it as the
+   active node, and bake **Ambient Occlusion** (start around 128–256 samples,
+   raise if noisy).
+3. Wire the baked image into Blender's **glTF Material Output** node group
+   (from the glTF I/O add-on) → `Occlusion` input. This is what makes the
+   exporter write `material.occlusionTexture` on export — without this node,
+   the bake exists as an image but never reaches the glTF file.
+4. Export the raw (still oversized) `.glb` as usual, then run it through the
+   normal scale/compress step: `node fix-glb-scale.mjs <raw.glb> ../models/stage-NN/model.glb 0.0114`.
+   This only touches node scale and Draco-compresses geometry — it doesn't
+   touch materials/textures, so the occlusion texture passes through untouched.
+
+After processing, confirm the texture actually made it through:
+
+```
+node inspect-glb.mjs ../models/stage-NN/model.glb
+```
+
+Look for `occlusionTexture: true` on the relevant material(s).
+
+## Previewing on a phone/tablet
+
+WebXR/camera access requires HTTPS (or `localhost`) — a plain `http://<lan-ip>`
+origin won't work for AR on most devices, even on the same Wi-Fi.
+
+- **Fast iteration loop:** serve the folder locally and tunnel it over HTTPS:
+  ```
+  npx serve .                                   # from the repo root
+  cloudflared tunnel --url http://localhost:3000  # no account needed
+  ```
+  Open the printed `https://*.trycloudflare.com` URL on the device.
+- **Confirm on the real pipeline:** push the branch — this repo is linked to
+  Vercel, so every push gets a normal HTTPS preview deployment URL to check
+  before merging.
 
 ## Chat script (`chat-script.docx`)
 
