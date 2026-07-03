@@ -7,8 +7,10 @@ let currentStage = 0;
 
 let POLL_STATE = {};
 let activePollIndex = null;
-let playing = true;
-let idx = 0;
+let revealIdx = 0;
+let revealing = false;
+let arPaused = false;
+let storyFinished = false;
 let firstImageIdx = -1; // computed once MESSAGES loads — see init
 
 async function loadJSON(path) {
@@ -260,12 +262,16 @@ function startExperience(name) {
   introOverlay.classList.add("hidden");
   currentStage = 0;
   applyStage(0);
-  playing = true;
-  playLoop();
+  revealIdx = 0;
+  storyFinished = false;
+  arPaused = false;
+  ensureScrollable();
+  fillViewport();
 }
 
 function resetToIntro() {
-  idx = 0;
+  revealIdx = 0;
+  storyFinished = false;
   POLL_STATE = {};
   activePollIndex = null;
   currentStage = 0;
@@ -292,14 +298,15 @@ function createViewer(stage) {
   viewer.setAttribute("shadow-intensity", "1");
   viewer.setAttribute("loading", "eager");
 
-  // Pause the chat while the user is actually in AR, so it doesn't keep
-  // advancing without them — resume exactly where it left off once they exit.
+  // Pause the story while the user is actually in AR, so it doesn't keep
+  // revealing without them — resume exactly where it left off once they exit.
   viewer.addEventListener("ar-status", (event) => {
     if (event.detail.status === "session-started") {
-      playing = false;
-    } else if (event.detail.status === "not-presenting" && !playing) {
-      playing = true;
-      playLoop();
+      arPaused = true;
+      updateScrollHint();
+    } else if (event.detail.status === "not-presenting" && arPaused) {
+      arPaused = false;
+      fillViewport();
     }
   });
 
@@ -452,11 +459,6 @@ function displayName(entry) {
   return entry.sender;
 }
 
-function scrollToBottom() {
-  const el = chatbody();
-  el.scrollTop = el.scrollHeight;
-}
-
 function updatePhoneClock(entry) {
   if (!entry.time) return;
   const clock = document.getElementById("phoneClock");
@@ -547,8 +549,7 @@ function renderEntry(i, entry) {
     const div = document.createElement("div");
     div.className = entry.type === "event" ? "system event" : "system";
     div.innerHTML = `<span>${entry.text}</span>`;
-    chatbody().appendChild(div);
-    scrollToBottom();
+    chatbody().insertBefore(div, document.getElementById("reveal-spacer"));
     return;
   }
 
@@ -568,8 +569,7 @@ function renderEntry(i, entry) {
           <span class="img-time">${entry.time || ""}</span>
         </div>
       </div>`;
-    chatbody().appendChild(row);
-    scrollToBottom();
+    chatbody().insertBefore(row, document.getElementById("reveal-spacer"));
     return;
   }
 
@@ -589,8 +589,7 @@ function renderEntry(i, entry) {
         </div>
         <span class="time">${entry.time || ""}</span>
       </div>`;
-    chatbody().appendChild(row);
-    scrollToBottom();
+    chatbody().insertBefore(row, document.getElementById("reveal-spacer"));
     return;
   }
 
@@ -626,8 +625,7 @@ function renderEntry(i, entry) {
           ${reactions}
         </div>`;
     }
-    chatbody().appendChild(row);
-    scrollToBottom();
+    chatbody().insertBefore(row, document.getElementById("reveal-spacer"));
     return;
   }
 
@@ -667,47 +665,61 @@ function renderEntry(i, entry) {
         ${optsHtml}
         <div class="poll-meta"><span class="poll-total-votes">0 votes</span><span class="poll-time">${entry.time || ""}</span></div>
       </div>`;
-    chatbody().appendChild(row);
-    scrollToBottom();
+    chatbody().insertBefore(row, document.getElementById("reveal-spacer"));
     return;
   }
 }
 
 function showTyping(entry, duration) {
-  return new Promise((resolve) => {
-    const row = document.createElement("div");
-    row.className = "typing-row";
-    row.innerHTML = `
-      ${avatarHTML(entry)}
-      <div class="typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
-    chatbody().appendChild(row);
-    scrollToBottom();
-    setTimeout(() => {
-      row.remove();
-      resolve();
-    }, duration);
-  });
+  const row = document.createElement("div");
+  row.className = "typing-row" + (entry.isMe ? " outgoing" : "");
+  row.innerHTML = `
+    ${avatarHTML(entry)}
+    <div class="typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+  chatbody().insertBefore(row, document.getElementById("reveal-spacer"));
+  return waitOrSkip(duration).then(() => row.remove());
 }
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Playback pacing. Reading time scales with how much text is actually in the
-// message (roughly a relaxed reading speed) instead of one flat delay for
-// every bubble, so short replies pass quickly and longer ones linger — a more
-// natural feel than a fixed pause regardless of length.
-// "intro" values apply only up to the first IMAGE message (pure chatter, no
-// model to see yet) so a demo doesn't wait a minute+ before the AR panel ever
-// changes; "normal" applies from the first image onward, once the design
-// story (and its model swaps) is actually underway.
+// Like sleep(), but scrolling while it's pending ends it immediately
+// instead of making the visitor sit through a delay they've already
+// signaled (by scrolling) that they want to skip past — used for the
+// typing-bubble beat and the short date/system pause, both of which happen
+// while the visitor might already be scrolling toward the next thing.
+let skipCurrentWait = null;
+function waitOrSkip(ms) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timeoutId);
+      if (skipCurrentWait === finish) skipCurrentWait = null;
+      resolve();
+    };
+    const timeoutId = setTimeout(finish, ms);
+    skipCurrentWait = finish;
+  });
+}
+
+// Typing-bubble timing. Duration scales with how much text is actually in
+// the entry (roughly a relaxed reading speed) instead of one flat delay for
+// every bubble, so a one-word reply flashes by and a long one lingers.
+// "intro" values apply only up to the first IMAGE entry (pure chatter, no
+// model to see yet) so a visitor isn't stuck through a minute of slow
+// typing bubbles before the AR panel ever changes; "normal" applies from
+// the first image onward, once the design story is underway. There's no
+// separate post-render "reading pause" — the story only actually advances
+// again once the visitor scrolls for it (see fillViewport below).
 const PACE = {
-  intro: { typingBase: 550, perWord: 95, msgMin: 850, msgMax: 2100 },
-  normal: { typingBase: 1050, perWord: 140, msgMin: 2500, msgMax: 6300 },
+  intro: { typingBase: 550, perWord: 95 },
+  normal: { typingBase: 1050, perWord: 140 },
   shortPause: 1700, // pause after date/system/event bubbles
   introShortPause: 550,
-  skipPause: 600, // pause for invisible transition/fastForward entries
-  loopEndPause: 5200, // pause after the last message before the chat restarts
+  loopEndPause: 5200, // pause before fading out once the last entry is revealed
   fadeOut: 500,
 };
 
@@ -719,12 +731,6 @@ function wordCount(entry) {
 function typingDuration(entry, inIntro) {
   const p = inIntro ? PACE.intro : PACE.normal;
   return p.typingBase + wordCount(entry) * p.perWord;
-}
-
-function readingPause(entry, inIntro) {
-  const p = inIntro ? PACE.intro : PACE.normal;
-  const raw = p.typingBase + wordCount(entry) * p.perWord;
-  return Math.max(p.msgMin, Math.min(p.msgMax, raw));
 }
 
 /* ---------- in-story reply prompt ----------
@@ -768,7 +774,7 @@ function handleUserPrompt(entry) {
       captionSkip.onclick = null;
       replySendBtn.onclick = null;
       if (text && text.trim()) {
-        renderEntry(idx, { type: "msg", isMe: true, text: capitalize(text.trim()), time: entry.time });
+        renderEntry(revealIdx, { type: "msg", isMe: true, text: capitalize(text.trim()), time: entry.time });
       }
       resolve();
     }
@@ -806,63 +812,170 @@ function handleUserPrompt(entry) {
   });
 }
 
-/* ---------- playback loop ----------
-   Faithful to the original message content and ordering. transition/
-   fastForward/calendarFlip entries drove the calendar & sun-arc widgets,
-   which don't exist in this layout — they're skipped as visible bubbles,
-   but any pollVotes they carry still gets applied instantly so poll numbers
-   keep progressing correctly through the story.
+/* ---------- playback: scroll-revealed story ----------
+   Not an autoplay timer: the story only advances as the visitor scrolls
+   .chatbody toward its current bottom — like scrolling down a real chat
+   thread to see what's new, at their own pace. Every message-shaped entry
+   (msg/poll/image/file — sender or visitor alike, not just incoming) still
+   plays the typing-dots beat first, then swaps it for the real bubble, so
+   the pacing feels consistent regardless of who's "typing". */
 
-   A single loop, not a step()-calls-itself-recursively pattern — the latter
-   deadlocks itself against a reentrancy guard the moment a continuation is
-   scheduled while the outer call is still awaiting. */
-async function playLoop() {
-  while (playing) {
-    if (idx >= MESSAGES.length) {
-      await sleep(PACE.loopEndPause);
-      if (!playing) return;
-      chatbody().classList.add("fade-out");
-      await sleep(PACE.fadeOut);
-      chatbody().classList.remove("fade-out");
-      chatbody().innerHTML = "";
-      // Each playthrough is one visitor's session — loop back to the intro
-      // instead of silently restarting, so the next person isn't handed
-      // the previous visitor's name.
-      playing = false;
-      resetToIntro();
-      return;
-    }
+function isNearBottom(el) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 64;
+}
 
-    const entry = MESSAGES[idx];
-    const inIntro = firstImageIdx === -1 || idx < firstImageIdx;
-
-    if (entry.type === "userPrompt") {
-      await handleUserPrompt(entry);
-      idx++;
-      await sleep(PACE.shortPause);
-      continue;
-    }
-
-    if (entry.type === "transition" || entry.type === "fastForward" || entry.type === "calendarFlip") {
-      if (entry.pollVotes && activePollIndex !== null) {
-        updateScriptedPollVotes(activePollIndex, entry.pollVotes);
-      }
-      idx++;
-      await sleep(PACE.skipPause);
-      continue;
-    }
-
-    if (entry.type === "msg" && !entry.isMe) {
-      await showTyping(entry, typingDuration(entry, inIntro));
-      if (!playing) return;
-    }
-
-    renderEntry(idx, entry);
-    idx++;
-    const isShort = entry.type === "date" || entry.type === "system" || entry.type === "event";
-    await sleep(isShort ? (inIntro ? PACE.introShortPause : PACE.shortPause) : readingPause(entry, inIntro));
+// .chatbody needs *some* extra scrollable room whenever story content
+// remains, or once revealed content happens to fit (or fall short of) the
+// container there's no scrollbar at all and the scroll listener that
+// reveals more can never fire. A fixed height is enough — the phone panel
+// itself has a capped height (#chat-panel.phone-wrap in styles.css), so
+// this doesn't need to be measured/recalculated per viewport.
+function ensureScrollable() {
+  const el = chatbody();
+  let spacer = document.getElementById("reveal-spacer");
+  if (revealIdx >= MESSAGES.length) {
+    if (spacer) spacer.remove();
+    return;
+  }
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "reveal-spacer";
+    el.appendChild(spacer);
   }
 }
+
+// Tracks how fast the visitor is *currently* scrolling (px/ms), so a quick
+// flick through the chat doesn't force the same wait as reading slowly.
+// Speed decays to 0 once scrolling has actually stopped (SCROLL_IDLE_MS) —
+// otherwise the last flick's speed would linger and keep speeding up the
+// automatic viewport-filling that follows, even once the visitor is just
+// reading again.
+let lastScrollTop = 0;
+let lastScrollAt = 0;
+let scrollSpeedPxPerMs = 0;
+const SCROLL_IDLE_MS = 250;
+const SCROLL_FAST_PX_MS = 1.5; // roughly a vigorous flick; speeds at/above this get the fastest pacing
+const SKIP_MIN_PX_MS = 0.45; // below this, a scroll in progress lets the current bubble/pause play out untouched
+const MIN_PACED_MS = 90; // still a visible flash of the bubble, never an instant swap
+
+function currentScrollSpeed() {
+  if (performance.now() - lastScrollAt > SCROLL_IDLE_MS) return 0;
+  return scrollSpeedPxPerMs;
+}
+
+// Linearly interpolates a full typing/pause duration down toward
+// MIN_PACED_MS based on current scroll speed — not scrolling (or scrolling
+// slowly) keeps the full duration, flicking fast collapses it.
+function pacedDuration(fullMs) {
+  const t = Math.min(currentScrollSpeed(), SCROLL_FAST_PX_MS) / SCROLL_FAST_PX_MS;
+  return Math.round(fullMs - t * (fullMs - MIN_PACED_MS));
+}
+
+function updateScrollHint() {
+  const hint = document.getElementById("scrollHint");
+  if (!hint) return;
+  const el = chatbody();
+  const waiting =
+    !storyFinished &&
+    !revealing &&
+    !arPaused &&
+    revealIdx < MESSAGES.length &&
+    el.scrollHeight > el.clientHeight + 4 &&
+    !isNearBottom(el);
+  hint.classList.toggle("show", waiting);
+}
+
+async function revealNext() {
+  if (revealing || arPaused || storyFinished) return;
+
+  if (revealIdx >= MESSAGES.length) {
+    storyFinished = true;
+    updateScrollHint();
+    await sleep(PACE.loopEndPause);
+    chatbody().classList.add("fade-out");
+    await sleep(PACE.fadeOut);
+    chatbody().classList.remove("fade-out");
+    chatbody().innerHTML = "";
+    // Each playthrough is one visitor's session — loop back to the intro
+    // instead of silently restarting, so the next person isn't handed the
+    // previous visitor's name.
+    resetToIntro();
+    return;
+  }
+
+  revealing = true;
+  const entry = MESSAGES[revealIdx];
+  const inIntro = firstImageIdx === -1 || revealIdx < firstImageIdx;
+
+  if (entry.type === "userPrompt") {
+    await handleUserPrompt(entry);
+  } else if (entry.type === "date" || entry.type === "system" || entry.type === "event") {
+    renderEntry(revealIdx, entry);
+    await waitOrSkip(pacedDuration(inIntro ? PACE.introShortPause : PACE.shortPause));
+  } else {
+    await showTyping(entry, pacedDuration(typingDuration(entry, inIntro)));
+    renderEntry(revealIdx, entry);
+  }
+
+  revealIdx++;
+  revealing = false;
+  ensureScrollable();
+  updateScrollHint();
+  requestAnimationFrame(fillViewport);
+}
+
+// Called on scroll, on resize, and right after every reveal — keeps filling
+// for as long as the visible area isn't full yet (initial load, or a run of
+// short entries), then stops and waits for the visitor's own next scroll.
+function fillViewport() {
+  if (revealing || arPaused || storyFinished) return;
+  // Once the last entry has been revealed, let this call through to
+  // revealNext() unconditionally — that's what actually runs the
+  // pause/fade/reset-to-intro sequence, and it shouldn't need a further
+  // scroll from the visitor to happen.
+  if (revealIdx >= MESSAGES.length) {
+    revealNext();
+    return;
+  }
+  const el = chatbody();
+  if (el.scrollHeight <= el.clientHeight + 4 || isNearBottom(el)) {
+    revealNext();
+  } else {
+    updateScrollHint();
+  }
+}
+
+let chatScrollScheduled = false;
+function onChatScroll() {
+  const el = chatbody();
+  const now = performance.now();
+  const dt = now - lastScrollAt;
+  // A dt this large means either the very first scroll event or a real
+  // pause beforehand — either way there's no meaningful "speed" to derive
+  // from it, so don't let a stale huge gap read as "scrolling slowly".
+  if (dt > 0 && dt < SCROLL_IDLE_MS) {
+    scrollSpeedPxPerMs = Math.abs(el.scrollTop - lastScrollTop) / dt;
+  }
+  lastScrollTop = el.scrollTop;
+  lastScrollAt = now;
+
+  // Mid-bubble/mid-pause, scrolling *meaningfully fast* fast-forwards the
+  // current wait right away. Gated by speed, not just "a scroll happened" —
+  // a slow, deliberate scroll fires just as many scroll events as a flick,
+  // so without this threshold every bubble would get cut short the instant
+  // the visitor so much as nudges the chat, leaving no scroll speed slow
+  // enough to actually see one play out.
+  if (skipCurrentWait && scrollSpeedPxPerMs >= SKIP_MIN_PX_MS) skipCurrentWait();
+
+  if (chatScrollScheduled) return;
+  chatScrollScheduled = true;
+  requestAnimationFrame(() => {
+    chatScrollScheduled = false;
+    fillViewport();
+  });
+}
+chatbody().addEventListener("scroll", onChatScroll);
+window.addEventListener("resize", () => fillViewport());
 
 /* ---------- init ---------- */
 

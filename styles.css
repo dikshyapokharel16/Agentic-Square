@@ -365,6 +365,45 @@ model-viewer {
 
 .action-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* invisible spacer guaranteeing .chatbody always has a little extra
+   scrollable room while story content remains unrevealed — otherwise the
+   scroll listener that reveals more can never fire once revealed content
+   happens to fit (or fall short of) the container */
+#reveal-spacer { flex-shrink: 0; height: 220px; }
+
+.scroll-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  transform: translateX(-50%) translateY(8px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(20,20,20,.88);
+  color: #fff;
+  padding: 7px 13px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+  z-index: 50;
+}
+
+.scroll-hint.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  animation: scrollHintBounce 1.6s ease-in-out infinite;
+}
+
+.scroll-hint i { font-size: 13px; }
+
+@keyframes scrollHintBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(4px); }
+}
+
 /* shared image bubble */
 .img-msg-bubble { background: #fff; border-radius: 0 7px 7px 7px; padding: 4px; max-width: 200px; }
 .img-msg-bubble .name { font-size: 12px; font-weight: 500; margin: 2px 6px 5px; }
@@ -430,6 +469,7 @@ model-viewer {
 .poll-time { font-size: 9.5px; color: #8696a0; }
 
 .typing-row { display: flex; gap: 6px; max-width: 88%; margin-bottom: 7px; }
+.typing-row.outgoing { align-self: flex-end; }
 .typing-bubble { background: #fff; border-radius: 0 7px 7px 7px; padding: 8px 11px; display: flex; gap: 4px; align-items: center; }
 .typing-bubble .dot { width: 5px; height: 5px; border-radius: 50%; background: #8696a0; animation: bounce 1s infinite ease-in-out; }
 .typing-bubble .dot:nth-child(2) { animation-delay: .15s; }
