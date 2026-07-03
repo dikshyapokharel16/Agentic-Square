@@ -28,7 +28,7 @@ function stageAt(i) {
 // before a re-scale can keep serving the stale one for up to an hour.
 // Bump this whenever a stage's model file is regenerated so every deploy
 // forces a fresh fetch regardless of that cache.
-const MODEL_VERSION = "8";
+const MODEL_VERSION = "9";
 
 function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
@@ -450,7 +450,10 @@ function avatarHTML(entry) {
 }
 
 function displayName(entry) {
-  return entry.sender;
+  // "role" is an optional tag (e.g. "Host", "Mediator") shown alongside the
+  // AI's name so the same sender can visibly shift hats across the story,
+  // without needing a different sender identity or avatar per role.
+  return entry.role ? `${entry.sender} · ${entry.role}` : entry.sender;
 }
 
 function scrollToBottom() {
@@ -738,6 +741,25 @@ function readingPause(entry, inIntro) {
 const REPLY_TIMEOUT_MS = 8000;
 const MAX_REPLY_LEN = 80;
 
+// Shared by handleUserPrompt's keyword-bucket branch and handleChoice's
+// per-option reply — both need "post a scripted Marktplatz line, with a
+// typing bubble, after the visitor's own message lands".
+async function showScriptedReply(baseEntry, text) {
+  const replyEntry = {
+    type: "msg",
+    sender: "Westhagen Marktplatz",
+    text,
+    time: baseEntry.time,
+    role: baseEntry.role,
+    initial: "L",
+    bg: baseEntry.bg || "#BF5468",
+    fg: baseEntry.fg || "#fbe7ea",
+  };
+  await sleep(PACE.shortPause);
+  await showTyping(replyEntry, typingDuration(replyEntry, false));
+  renderEntry(idx, replyEntry);
+}
+
 function handleUserPrompt(entry) {
   return new Promise((resolve) => {
     const caption = document.getElementById("arCaption");
@@ -759,7 +781,20 @@ function handleUserPrompt(entry) {
     let keyboardBuilt = false;
     const timeoutId = setTimeout(() => finish(null), REPLY_TIMEOUT_MS);
 
-    function finish(text) {
+    // Matches the visitor's typed reply against optional keyword buckets
+    // (e.g. touchpoints where the AI's next line depends on *what* the
+    // visitor suggested, not just that they replied at all) and falls back
+    // to entry.fallbackReply when nothing matches. Plain free-text prompts
+    // without buckets are unaffected — this is a no-op unless the entry
+    // opts in.
+    function matchBucketReply(text) {
+      if (!entry.buckets && !entry.fallbackReply) return null;
+      const lower = text.toLowerCase();
+      const bucket = (entry.buckets || []).find((b) => b.keywords.some((k) => lower.includes(k)));
+      return bucket ? bucket.reply : entry.fallbackReply || null;
+    }
+
+    async function finish(text) {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutId);
@@ -770,6 +805,8 @@ function handleUserPrompt(entry) {
       replySendBtn.onclick = null;
       if (text && text.trim()) {
         renderEntry(idx, { type: "msg", isMe: true, text: capitalize(text.trim()), time: entry.time });
+        const replyText = matchBucketReply(text.trim());
+        if (replyText) await showScriptedReply(entry, replyText);
       }
       resolve();
     }
@@ -807,6 +844,62 @@ function handleUserPrompt(entry) {
   });
 }
 
+/* ---------- in-story multiple-choice prompt ----------
+   Same caption-tap mechanic as handleUserPrompt, but taps reveal short
+   quick-reply buttons instead of a keyboard. Each option carries its own
+   full "postText" (what actually gets posted as the visitor's message,
+   which can be longer/more natural than the short button label) and an
+   optional "reply" from the AI — some options intentionally have no reply
+   and just let the next scripted message continue straight on. */
+function handleChoice(entry) {
+  return new Promise((resolve) => {
+    const caption = document.getElementById("arCaption");
+    const captionText = document.getElementById("arCaptionText");
+    const captionSkip = document.getElementById("arCaptionSkip");
+    const replyChoices = document.getElementById("replyChoices");
+
+    updatePhoneClock(entry);
+    captionText.textContent = entry.promptText || "What do you say?";
+    positionArCaption();
+    caption.classList.add("show");
+
+    let settled = false;
+    const timeoutId = setTimeout(() => finish(null), REPLY_TIMEOUT_MS);
+
+    async function finish(option) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      caption.classList.remove("show");
+      replyChoices.classList.remove("show");
+      caption.onclick = null;
+      captionSkip.onclick = null;
+      if (option) {
+        renderEntry(idx, { type: "msg", isMe: true, text: option.postText, time: entry.time });
+        if (option.reply) await showScriptedReply(entry, option.reply);
+      }
+      resolve();
+    }
+
+    captionSkip.onclick = (event) => {
+      event.stopPropagation();
+      finish(null);
+    };
+
+    caption.onclick = () => {
+      clearTimeout(timeoutId);
+      caption.classList.remove("show");
+      replyChoices.innerHTML = entry.options
+        .map((opt, i) => `<button class="reply-choice-btn" data-idx="${i}">${opt.label}</button>`)
+        .join("");
+      replyChoices.querySelectorAll(".reply-choice-btn").forEach((btn, i) => {
+        btn.onclick = () => finish(entry.options[i]);
+      });
+      replyChoices.classList.add("show");
+    };
+  });
+}
+
 /* ---------- playback loop ----------
    Faithful to the original message content and ordering. transition/
    fastForward/calendarFlip entries drove the calendar & sun-arc widgets,
@@ -839,6 +932,13 @@ async function playLoop() {
 
     if (entry.type === "userPrompt") {
       await handleUserPrompt(entry);
+      idx++;
+      await sleep(PACE.shortPause);
+      continue;
+    }
+
+    if (entry.type === "choice") {
+      await handleChoice(entry);
       idx++;
       await sleep(PACE.shortPause);
       continue;

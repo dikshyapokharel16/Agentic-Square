@@ -1,5 +1,5 @@
 import { NodeIO } from "@gltf-transform/core";
-import { KHRDracoMeshCompression } from "@gltf-transform/extensions";
+import { KHRDracoMeshCompression, EXTTextureWebP } from "@gltf-transform/extensions";
 import draco3d from "draco3dgltf";
 
 const [, , inPath] = process.argv;
@@ -10,7 +10,7 @@ if (!inPath) {
 }
 
 const io = new NodeIO()
-  .registerExtensions([KHRDracoMeshCompression])
+  .registerExtensions([KHRDracoMeshCompression, EXTTextureWebP])
   .registerDependencies({
     "draco3d.decoder": await draco3d.createDecoderModule(),
   });

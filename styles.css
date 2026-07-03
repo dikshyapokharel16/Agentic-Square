@@ -785,3 +785,40 @@ model-viewer {
   justify-content: center;
   cursor: pointer;
 }
+
+/* ---------- in-phone reply choices (quick-reply buttons, same slide-up as the keyboard) ---------- */
+.reply-choices {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ECE5DD;
+  border-top: 1px solid #d8d2c6;
+  padding: 3% 3.5% 4%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: translateY(100%);
+  transition: transform .3s ease;
+  z-index: 6;
+}
+
+.reply-choices.show {
+  transform: translateY(0);
+}
+
+.reply-choice-btn {
+  appearance: none;
+  border: none;
+  background: #fff;
+  border-radius: 18px;
+  padding: 10px 14px;
+  font-size: clamp(10px, 1.1vw, 13px);
+  color: #111;
+  text-align: left;
+  cursor: pointer;
+}
+
+.reply-choice-btn:active {
+  background: #d9fdd3;
+}

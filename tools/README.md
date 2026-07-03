@@ -28,14 +28,16 @@ pass `0.0114` to match the current room-scale sizing used for stages 00-03.
 Verify with `node inspect-glb.mjs ../models/stage-NN/model.glb` (prints material
 info, not size) or check bounds by eye in a viewer — target is ~1.8m longest side.
 
-**This script also resizes/re-encodes textures (2048x2048 max, WebP).**
+**This script also resizes/re-encodes textures (2048x2048 max, WebP)** and
+**simplifies geometry (meshoptimizer, ratio 0.5)** before Draco-compressing.
 SketchUp/Blender exports have shown up with textures as large as 11811x11811
-px — geometry (Draco-compressed) is not the size problem for these models,
-textures are. One stage-00 re-export was 22.8MB before this step, 2.2MB after,
-with no visible quality loss at AR viewing distance on a ~1.8m model. If a
-model looks unusually slow to load, check texture dimensions with the inline
-inspection snippet in `inspect-glb.mjs`'s style before assuming it's a network
-issue.
+px, and separately with far more polygons than a small AR model needs —
+stage-01..03 raw exports ran 85-90MB *before* any of this. Texture resize is
+usually the bigger win (one stage-00 re-export: 22.8MB before, 2.2MB after);
+simplify is a smaller but real cut on top (~8% further, plus fewer triangles
+for smoother real-time rendering). If a model looks unusually slow to load,
+check texture dimensions and vertex count with `inspect-glb.mjs` before
+assuming it's a network issue.
 
 ## `.usdz` (iOS)
 
@@ -67,6 +69,15 @@ One stage-00 re-export went from 22.7MB of textures to 3.4MB with no visible
 quality loss. Converting format means the USD material's texture references
 get rewired automatically to the new filename — this happens in-script, you
 don't need to do anything extra.
+
+**Known limitation: geometry is not compressed or simplified for `.usdz`.**
+Unlike `.glb` (Draco + meshoptimizer), there's no mesh-compression tool in
+this pipeline for USD — file size scales directly with polygon count. Heavy
+raw exports (stage-01..03: 73MB+ of raw mesh alone) stay heavy after this
+script (~80MB) since only textures/scale get fixed, not geometry. If a model
+needs to be smaller, decimate it in Blender (Decimate modifier, ~0.3-0.5
+ratio) *before* exporting to `.usdz` — reducing polygon count at the source
+is the only reliable fix right now.
 
 ## Ambient occlusion
 
