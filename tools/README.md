@@ -27,21 +27,3 @@ python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.011
 ```
 
 Add `--factor 0.0114` explicitly to match the current room-scale sizing (default is `0.05`).
-
-## Chat script (`chat-script.docx`)
-
-The chat script lives in `../chat-script.docx` — a Word document editors (no
-JSON knowledge needed) use to write dialogue. Requires Python with
-`python-docx`: `pip install python-docx`.
-
-```
-python chat_docx.py export   # regenerate chat-script.docx from messages.json
-python chat_docx.py sync     # regenerate messages.json from chat-script.docx
-```
-
-Only plain dialogue (dates, system notes, messages, image/stage changes) is
-editable in the doc — see the instructions at the top of the document itself.
-Polls, file shares, and the visitor reply-prompt show up as non-editable
-`[LOCKED: ...]` lines; edit those directly in `messages.json` instead.
-`export` always regenerates from the current `messages.json`, so run it again
-after any direct JSON edits to keep the Word doc in sync.
