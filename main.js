@@ -265,6 +265,10 @@ function startExperience(name) {
   revealIdx = 0;
   storyFinished = false;
   arPaused = false;
+  // Defensive: normally already empty (the end-of-story reset clears it),
+  // but guarantees a clean slate regardless of how chatbody got into
+  // whatever state it was in before this particular start.
+  chatbody().innerHTML = "";
   ensureScrollable();
   fillViewport();
 }
@@ -414,6 +418,46 @@ function positionArCaption() {
 window.addEventListener("resize", positionArCaption);
 positionArCaption();
 
+// Every rendered chat row is tagged with its MESSAGES array index (see
+// renderEntry) so a level pop-up can be pinned to a specific already-
+// revealed message instead of always sitting at a fixed spot.
+function findRowByIndex(idx) {
+  return chatbody().querySelector(`[data-msg-index="${idx}"]`);
+}
+
+// Same horizontal tuck as positionArCaption, but the vertical offset
+// tracks a specific chat row's on-screen height instead of always sitting
+// near the phone's bottom edge — used by level pop-ups that declare an
+// entry.anchorIndex. Falls back to positionArCaption's fixed spot if the
+// anchor row isn't found (e.g. anchorIndex omitted, or not yet rendered).
+// Pulled in further than positionArCaption's own tuck: at that anchor
+// height a full 36px reaches past the chat's left padding and into the
+// avatar column, covering it. A card can land at any row (not just a
+// fixed bottom spot), so it needs the extra clearance every time.
+function positionLevelCaption(anchorRow) {
+  if (!anchorRow) {
+    positionArCaption();
+    return;
+  }
+  const caption = document.getElementById("arCaption");
+  const phone = document.querySelector(".phone-wrap");
+  if (!caption || !phone) return;
+  const phoneRect = phone.getBoundingClientRect();
+  const overlap = 15; // px — clear of the avatar column (positionArCaption uses 36)
+  caption.style.left = "auto";
+  caption.style.right = `${Math.max(8, window.innerWidth - phoneRect.left - overlap)}px`;
+
+  const rowRect = anchorRow.getBoundingClientRect();
+  const centerY = rowRect.top + rowRect.height / 2;
+  const captionHeight = caption.offsetHeight;
+  const top = Math.min(
+    Math.max(16, centerY - captionHeight / 2),
+    window.innerHeight - captionHeight - 16
+  );
+  caption.style.bottom = "auto";
+  caption.style.top = `${top}px`;
+}
+
 function watchArAvailability(el) {
   const evaluate = () => {
     if (el.canActivateAR) hideQrFallback();
@@ -449,9 +493,44 @@ function hideQrFallback() {
 
 const chatbody = () => document.getElementById("chatbody");
 
+// Marktplatz speaks with a different institutional "hat" depending on what
+// it's doing in the story (welcoming people vs. running a vote vs.
+// mediating a conflict, etc.) — each role gets its own icon avatar and
+// accent color instead of one fixed brand look, so the chat reads as a
+// group with multiple functions rather than a single static bot identity.
+const ROLE_STYLES = {
+  "Host": { icon: "ti-users", color: "#7F77DD" },
+  "Voting officer": { icon: "ti-checkbox", color: "#378ADD" },
+  "Designer": { icon: "ti-ruler-2", color: "#D85A30" },
+  "Mediator": { icon: "ti-scale", color: "#D4537E" },
+  "Resource manager": { icon: "ti-coin", color: "#BA7517" },
+  "Administrative liaison": { icon: "ti-building-bank", color: "#1D9E75" },
+  "Event planner": { icon: "ti-calendar-event", color: "#639922" },
+  "Documentation": { icon: "ti-file-text", color: "#888780" },
+};
+
+function roleStyle(entry) {
+  return (entry.role && ROLE_STYLES[entry.role]) || null;
+}
+
+// Bubble background gets a faint wash of the role color (not the full
+// saturated swatch — message text needs to stay readable), computed from
+// the same color the avatar/name use so they read as one accent.
+function bubbleStyleFor(entry) {
+  const role = roleStyle(entry);
+  return role ? `background: color-mix(in srgb, ${role.color} 14%, #fff);` : "";
+}
+
+function nameColorFor(entry) {
+  const role = roleStyle(entry);
+  return role ? role.color : entry.bg || "#111";
+}
+
 function avatarHTML(entry) {
   if (entry.isMe) return "";
-  if (entry.sender === "Westhagen Marktplatz") return `<div class="av av-loci"></div>`;
+  const role = roleStyle(entry);
+  if (role) return `<div class="av av-role" style="background:${role.color};"><i class="ti ${role.icon}"></i></div>`;
+  if (entry.sender === "Marktplatz") return `<div class="av av-loci"></div>`;
   return `<div class="av" style="background:${entry.bg}; color:${entry.fg};">${entry.initial || ""}</div>`;
 }
 
@@ -548,6 +627,7 @@ function renderEntry(i, entry) {
   if (entry.type === "date" || entry.type === "system" || entry.type === "event") {
     const div = document.createElement("div");
     div.className = entry.type === "event" ? "system event" : "system";
+    div.dataset.msgIndex = i;
     div.innerHTML = `<span>${entry.text}</span>`;
     chatbody().insertBefore(div, document.getElementById("reveal-spacer"));
     return;
@@ -560,10 +640,11 @@ function renderEntry(i, entry) {
     const poster = stage && stage.poster ? stage.poster : "";
     const row = document.createElement("div");
     row.className = "row";
+    row.dataset.msgIndex = i;
     row.innerHTML = `
       ${avatarHTML(entry)}
-      <div class="img-msg-bubble">
-        <div class="name" style="color:${entry.bg || "#111"};">${displayName(entry)}</div>
+      <div class="img-msg-bubble" style="${bubbleStyleFor(entry)}">
+        <div class="name" style="color:${nameColorFor(entry)};">${displayName(entry)}</div>
         <div class="img-wrap">
           <img src="${poster}" alt="${entry.caption || "shared image"}">
           <span class="img-time">${entry.time || ""}</span>
@@ -576,10 +657,11 @@ function renderEntry(i, entry) {
   if (entry.type === "file") {
     const row = document.createElement("div");
     row.className = "row";
+    row.dataset.msgIndex = i;
     row.innerHTML = `
       ${avatarHTML(entry)}
-      <div class="file-msg-bubble">
-        <div class="name" style="color:${entry.bg || "#111"};">${displayName(entry)}</div>
+      <div class="file-msg-bubble" style="${bubbleStyleFor(entry)}">
+        <div class="name" style="color:${nameColorFor(entry)};">${displayName(entry)}</div>
         <div class="file-card">
           <div class="file-icon"><i class="ti ti-file-type-pdf"></i></div>
           <div class="file-meta">
@@ -606,6 +688,7 @@ function renderEntry(i, entry) {
             .join("")}</div>`
         : "";
     const ctaBtn = entry.ctaButton ? `<div><button class="cta-btn" onclick="showActionToast()">${entry.ctaButton}</button></div>` : "";
+    row.dataset.msgIndex = i;
     if (entry.isMe) {
       row.className = "row outgoing" + (reactions ? " has-reactions" : "");
       row.innerHTML = `
@@ -618,8 +701,8 @@ function renderEntry(i, entry) {
       row.className = "row" + (reactions ? " has-reactions" : "");
       row.innerHTML = `
         ${avatarHTML(entry)}
-        <div class="bubble">
-          <div class="name" style="color:${entry.bg || "#111"};">${displayName(entry)}</div>
+        <div class="bubble" style="${bubbleStyleFor(entry)}">
+          <div class="name" style="color:${nameColorFor(entry)};">${displayName(entry)}</div>
           <div class="text">${entry.text}<span class="time">${entry.time || ""}</span></div>
           ${ctaBtn}
           ${reactions}
@@ -657,10 +740,11 @@ function renderEntry(i, entry) {
     const qIcon = entry.multi ? "ti-list-check" : "ti-chart-bar";
     const row = document.createElement("div");
     row.className = "row";
+    row.dataset.msgIndex = i;
     row.innerHTML = `
       ${avatarHTML(entry)}
-      <div class="poll-bubble" data-poll-idx="${pollIdx}">
-        <div class="name" style="color:${entry.bg || "#111"};">${displayName(entry)}</div>
+      <div class="poll-bubble" data-poll-idx="${pollIdx}" style="${bubbleStyleFor(entry)}">
+        <div class="name" style="color:${nameColorFor(entry)};">${displayName(entry)}</div>
         <div class="poll-q"><i class="ti ${qIcon}"></i><span>${entry.question}</span></div>
         ${optsHtml}
         <div class="poll-meta"><span class="poll-total-votes">0 votes</span><span class="poll-time">${entry.time || ""}</span></div>
@@ -736,12 +820,29 @@ function typingDuration(entry, inIntro) {
 /* ---------- in-story reply prompt ----------
    Pauses playback, nudges the visitor via a caption bubble over the AR
    panel (styled like a narrative caption, not a chat bubble — it's "the
-   square itself" asking). Tapping it slides up a compact keyboard inside
-   the phone screen, mirroring how a real phone's keyboard behaves. Skip,
-   an 8s timeout, or sending a reply all resolve the same way so playback
-   always continues. */
+   square itself" asking). Tapping it slides up either a compact keyboard or
+   a set of tap options inside the phone screen, depending on entry.mode:
+     - "text" (default): free typing, becomes the visitor's own outgoing msg.
+     - "choice": tap-to-pick options (entry.options), each posts its own
+       wording as the visitor and — unless the option has none — a
+       follow-up reply from Marktplatz.
+     - "keywords": free typing like "text", but the typed reply is also
+       scanned against entry.buckets to pick which Marktplatz follow-up
+       fits best (entry.fallbackReply if nothing matches).
+   Skip, an 8s timeout, or sending/tapping a reply all resolve the same way
+   so playback always continues. */
 const REPLY_TIMEOUT_MS = 8000;
 const MAX_REPLY_LEN = 80;
+
+// Finds the first bucket whose keywords appear in the typed text
+// (case-insensitive substring match); falls back to entry.fallbackReply
+// (or null) if nothing matches, so a "keywords" prompt without a matching
+// bucket still resolves — just without a follow-up reply.
+function matchBucketReply(entry, text) {
+  const lower = text.toLowerCase();
+  const bucket = (entry.buckets || []).find((b) => b.match.some((kw) => lower.includes(kw)));
+  return (bucket && bucket.reply) || entry.fallbackReply || null;
+}
 
 function handleUserPrompt(entry) {
   return new Promise((resolve) => {
@@ -751,18 +852,44 @@ function handleUserPrompt(entry) {
     const replyKeyboard = document.getElementById("replyKeyboard");
     const replyDisplay = document.getElementById("replyDisplay");
     const replySendBtn = document.getElementById("replySendBtn");
+    const replyChoices = document.getElementById("replyChoices");
+    const isChoice = entry.mode === "choice";
 
     updatePhoneClock(entry);
+    caption.classList.remove("level-mode");
     captionText.textContent = entry.promptText || "Want to say something to the group?";
     replyDisplay.textContent = "";
     replyDisplay.setAttribute("data-placeholder", entry.placeholder || "Type a reply…");
+    replyKeyboard.classList.toggle("choice-mode", isChoice);
     positionArCaption();
     caption.classList.add("show");
 
     let replyText = "";
     let settled = false;
-    let keyboardBuilt = false;
-    const timeoutId = setTimeout(() => finish(null), REPLY_TIMEOUT_MS);
+    let built = false;
+    const timeoutId = setTimeout(() => finish(""), REPLY_TIMEOUT_MS);
+
+    // Renders Marktplatz's follow-up (if any) after a typing beat, then
+    // resolves — shared by both the choice and keyword-bucket paths so the
+    // reply always appears as part of the same interaction, not gated
+    // behind a further scroll.
+    async function settleWithReply(reply) {
+      if (reply) {
+        const replyEntry = {
+          type: "msg",
+          sender: "Marktplatz",
+          role: reply.role,
+          text: reply.text,
+          time: reply.time || entry.time,
+          bg: "#BF5468",
+          fg: "#fbe7ea",
+          initial: "L",
+        };
+        await showTyping(replyEntry, pacedDuration(typingDuration(replyEntry, false)));
+        renderEntry(revealIdx, replyEntry);
+      }
+      resolve();
+    }
 
     function finish(text) {
       if (settled) return;
@@ -775,15 +902,31 @@ function handleUserPrompt(entry) {
       replySendBtn.onclick = null;
       if (text && text.trim()) {
         renderEntry(revealIdx, { type: "msg", isMe: true, text: capitalize(text.trim()), time: entry.time });
+        if (entry.mode === "keywords") {
+          settleWithReply(matchBucketReply(entry, text));
+          return;
+        }
       }
       resolve();
+    }
+
+    function finishChoice(option) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      caption.classList.remove("show");
+      replyKeyboard.classList.remove("show");
+      caption.onclick = null;
+      captionSkip.onclick = null;
+      renderEntry(revealIdx, { type: "msg", isMe: true, text: option.text, time: entry.time });
+      settleWithReply(option.reply);
     }
 
     // Skip sits inside the caption box, so stop its click from also
     // bubbling up to the box's own "open the reply keyboard" handler below.
     captionSkip.onclick = (event) => {
       event.stopPropagation();
-      finish(null);
+      finish("");
     };
 
     // The whole box is tappable, not just the text — a visitor's tap could
@@ -791,24 +934,71 @@ function handleUserPrompt(entry) {
     caption.onclick = () => {
       clearTimeout(timeoutId);
       caption.classList.remove("show");
-      if (!keyboardBuilt) {
-        buildKeyboard(document.getElementById("replyKeyboardKeys"), {
-          onChar: (ch) => {
-            if (replyText.length >= MAX_REPLY_LEN) return;
-            replyText += ch;
-            replyDisplay.textContent = replyText;
-          },
-          onBackspace: () => {
-            replyText = replyText.slice(0, -1);
-            replyDisplay.textContent = replyText;
-          },
-        });
-        keyboardBuilt = true;
+      if (!built) {
+        if (isChoice) {
+          replyChoices.innerHTML = "";
+          (entry.options || []).forEach((option) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "choice-btn";
+            btn.textContent = option.label;
+            btn.addEventListener("click", () => finishChoice(option));
+            replyChoices.appendChild(btn);
+          });
+        } else {
+          buildKeyboard(document.getElementById("replyKeyboardKeys"), {
+            onChar: (ch) => {
+              if (replyText.length >= MAX_REPLY_LEN) return;
+              replyText += ch;
+              replyDisplay.textContent = replyText;
+            },
+            onBackspace: () => {
+              replyText = replyText.slice(0, -1);
+              replyDisplay.textContent = replyText;
+            },
+          });
+        }
+        built = true;
       }
       replyKeyboard.classList.add("show");
+      // The keyboard slides up over the same corner the scroll hint sits
+      // in, otherwise overlapping it.
+      updateScrollHint();
     };
 
     replySendBtn.onclick = () => finish(replyText);
+  });
+}
+
+/* ---------- in-story level pop-up ----------
+   Reuses the exact same caption bubble as the reply prompt above (styled
+   like a narrative caption "over the AR panel", not a chat bubble) rather
+   than a separate in-chat element — .level-mode on #arCaption swaps in the
+   level number/title and hides the tap-to-reply/skip row, since a level
+   card is purely informational. Dismissed the same way the reply prompt's
+   own caption is opened: a tap anywhere on the card. entry.anchorIndex, if
+   set, pins the card's height to that already-revealed message's row
+   instead of the default fixed spot (see positionLevelCaption). */
+function handleLevelPopup(entry) {
+  return new Promise((resolve) => {
+    const caption = document.getElementById("arCaption");
+    const captionText = document.getElementById("arCaptionText");
+    const captionLevelNum = document.getElementById("arCaptionLevelNum");
+    const captionLevelTitle = document.getElementById("arCaptionLevelTitle");
+
+    updatePhoneClock(entry);
+    caption.classList.add("level-mode");
+    captionLevelNum.textContent = `Level ${entry.level}`;
+    captionLevelTitle.textContent = entry.title;
+    captionText.textContent = entry.text;
+    positionLevelCaption(entry.anchorIndex != null ? findRowByIndex(entry.anchorIndex) : null);
+    caption.classList.add("show");
+
+    caption.onclick = () => {
+      caption.onclick = null;
+      caption.classList.remove("show", "level-mode");
+      resolve();
+    };
   });
 }
 
@@ -875,14 +1065,30 @@ function updateScrollHint() {
   const hint = document.getElementById("scrollHint");
   if (!hint) return;
   const el = chatbody();
+  const replyKeyboardOpen = document.getElementById("replyKeyboard").classList.contains("show");
   const waiting =
     !storyFinished &&
     !revealing &&
     !arPaused &&
+    !replyKeyboardOpen &&
     revealIdx < MESSAGES.length &&
     el.scrollHeight > el.clientHeight + 4 &&
     !isNearBottom(el);
   hint.classList.toggle("show", waiting);
+}
+
+// Plays the typing beat (or the short date/system/event pause) and renders
+// one entry — the "plain", non-blocking reveal step shared by the normal
+// sequential loop below and the level auto-reveal batch, which needs the
+// exact same per-entry treatment while it runs ahead of the scroll gate.
+async function revealPlainEntry(idx, entry, inIntro) {
+  if (entry.type === "date" || entry.type === "system" || entry.type === "event") {
+    renderEntry(idx, entry);
+    await waitOrSkip(pacedDuration(inIntro ? PACE.introShortPause : PACE.shortPause));
+  } else {
+    await showTyping(entry, pacedDuration(typingDuration(entry, inIntro)));
+    renderEntry(idx, entry);
+  }
 }
 
 async function revealNext() {
@@ -909,12 +1115,27 @@ async function revealNext() {
 
   if (entry.type === "userPrompt") {
     await handleUserPrompt(entry);
-  } else if (entry.type === "date" || entry.type === "system" || entry.type === "event") {
-    renderEntry(revealIdx, entry);
-    await waitOrSkip(pacedDuration(inIntro ? PACE.introShortPause : PACE.shortPause));
+  } else if (entry.type === "level") {
+    // entry.autoReveal lets a handful of entries play out first (typing
+    // beats and all, normal chat — no popup visible yet), so the level
+    // card only pops up once its anchor message has actually appeared,
+    // already sitting right next to it — not before, and not needing a
+    // reposition partway through once the anchor shows up.
+    let idx = revealIdx;
+    const autoCount = entry.autoReveal || 0;
+    for (let n = 0; n < autoCount && idx + 1 < MESSAGES.length; n++) {
+      idx++;
+      await revealPlainEntry(idx, MESSAGES[idx], firstImageIdx === -1 || idx < firstImageIdx);
+      ensureScrollable();
+    }
+    revealIdx = idx;
+    if (entry.anchorIndex != null) {
+      const anchorRow = findRowByIndex(entry.anchorIndex);
+      if (anchorRow) anchorRow.scrollIntoView({ block: "center" });
+    }
+    await handleLevelPopup(entry);
   } else {
-    await showTyping(entry, pacedDuration(typingDuration(entry, inIntro)));
-    renderEntry(revealIdx, entry);
+    await revealPlainEntry(revealIdx, entry, inIntro);
   }
 
   revealIdx++;
@@ -928,6 +1149,16 @@ async function revealNext() {
 // for as long as the visible area isn't full yet (initial load, or a run of
 // short entries), then stops and waits for the visitor's own next scroll.
 function fillViewport() {
+  // resize fires on window/viewport changes that can happen while the
+  // visitor is still on the name-entry screen (mobile browsers commonly
+  // fire one early, as the address bar UI settles right after load) — if
+  // that reached revealNext() before startExperience() has run, it would
+  // silently reveal the level-1 auto-reveal batch into the still-hidden
+  // #chatbody using the *unpersonalized* MESSAGES (still === RAW_MESSAGES
+  // at that point), which then sat there as stale, un-{{name}}-replaced
+  // DOM nodes ahead of the real (correctly personalized) reveal that
+  // startExperience() kicks off once the visitor actually starts.
+  if (!introOverlay.classList.contains("hidden")) return;
   if (revealing || arPaused || storyFinished) return;
   // Once the last entry has been revealed, let this call through to
   // revealNext() unconditionally — that's what actually runs the

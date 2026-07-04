@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Agentic Square</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,500;0,600;0,700;1,500&display=swap">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
   <link rel="stylesheet" href="styles.css" />
   <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js" defer></script>
@@ -35,11 +35,16 @@
         <p id="loading-message">Loading model…</p>
       </div>
       <div class="ar-caption" id="arCaption">
+        <div class="ar-caption-level" id="arCaptionLevel">
+          <span class="ar-caption-level-num" id="arCaptionLevelNum"></span>
+          <span class="ar-caption-level-title" id="arCaptionLevelTitle"></span>
+        </div>
         <p class="ar-caption-text" id="arCaptionText"></p>
-        <div class="ar-caption-actions">
+        <div class="ar-caption-actions" id="arCaptionActions">
           <span class="ar-caption-hint">Tap to reply</span>
           <button class="ar-caption-skip" id="arCaptionSkip">Skip</button>
         </div>
+        <div class="ar-caption-tap-hint" id="arCaptionTapHint"><i class="ti ti-hand-click"></i><span>Click to continue</span></div>
       </div>
     </section>
 
@@ -58,7 +63,7 @@
             <i class="ti ti-arrow-left" style="font-size:1.3em;"></i>
             <div class="avatar av-loci"></div>
             <div class="meta">
-              <div class="title">Westhagen Marktplatz</div>
+              <div class="title">Westhagen</div>
               <div class="sub"><span id="memberCount">1,041 members</span></div>
             </div>
             <i class="ti ti-video" style="font-size:1.2em;"></i>
@@ -69,7 +74,7 @@
           <div class="action-toast" id="actionToast">📍 Pointing your camera at the square would show exactly where each piece should be placed</div>
           <div class="inputbar">
             <div class="field" id="inputField"><i class="ti ti-mood-smile" style="font-size:1.1em;"></i><div class="field-text-wrap"><span class="field-text">Message</span></div></div>
-            <i class="ti ti-camera" style="font-size:1.3em; color:#54656f;"></i>
+            <i class="ti ti-camera" style="font-size:1.3em; color:#54656f; padding:6px;"></i>
             <i class="ti ti-microphone" style="font-size:1.3em; color:#fff; background:#008069; border-radius:50%; padding:6px;"></i>
           </div>
 
@@ -79,6 +84,7 @@
               <button class="reply-send-btn" id="replySendBtn"><i class="ti ti-send"></i></button>
             </div>
             <div class="keyboard compact" id="replyKeyboardKeys"></div>
+            <div class="choice-options" id="replyChoices"></div>
           </div>
         </div>
       </div>

@@ -1,11 +1,12 @@
 """Sync the chat script between messages.json and a Word document.
 
-Only plain dialogue (dates, system notes, messages, image/stage changes) is
-editable from Word. Polls, file shares, and the visitor reply-prompt carry
-data that has no simple Word representation (poll options, reaction/vote
-wiring, prompt copy) and stay defined in messages.json only — they show up
-in the doc as a single non-editable "[LOCKED: ...]" marker line so editors
-can see the story's shape without being able to touch that content.
+Only plain dialogue (dates, system notes, messages, image/stage changes,
+level cards) is editable from Word. Polls, file shares, and the visitor
+reply-prompt carry data that has no simple Word representation (poll
+options, reaction/vote wiring, prompt copy, tap-choice/keyword-bucket
+wiring) and stay defined in messages.json only — they show up in the doc
+as a single non-editable "[LOCKED: ...]" marker line so editors can see
+the story's shape without being able to touch that content.
 
 Usage:
     python chat_docx.py export   # messages.json -> chat-script.docx
@@ -23,9 +24,12 @@ from docx import Document
 
 LOCKED_TYPES = {"poll", "file", "userPrompt"}
 
-# Pinned so the group persona keeps its brand color (matches --accent-terracotta
-# in styles.css) instead of being hash-generated like community members.
-BRAND_COLORS = {"Westhagen Marktplatz": ("#BF5468", "#fbe7ea", "L")}
+# Pinned so Marktplatz's default look (no role tag) keeps a stable brand
+# color (matches --accent-terracotta in styles.css) instead of being
+# hash-generated like community members. Most Marktplatz lines carry an
+# explicit [Role] tag instead (see color_for/ROLE_STYLES in main.js) —
+# this is only the fallback for a roleless line.
+BRAND_COLORS = {"Marktplatz": ("#BF5468", "#fbe7ea", "L")}
 
 HEADER_LINES = [
     "Agentic Square — Chat Script",
@@ -47,6 +51,23 @@ HEADER_LINES = [
     "  IMAGE Sender hh:mm    -> shares a picture — ALSO ADVANCES which stage/",
     "                           3D model the AR panel shows, in the order",
     "                           these IMAGE blocks appear top to bottom",
+    "  LEVEL n hh:mm         -> a pop-up card next to the chat that pauses it",
+    "                           until tapped. First line below is the title,",
+    "                           second line is the explanation text.",
+    "  LEVEL n hh:mm (auto:4) -> same, but the 4 entries right after this one",
+    "                           play out automatically while the card is still",
+    "                           up, instead of also waiting on a tap.",
+    "",
+    "A LEVEL card can also be pinned to a specific already-revealed message's",
+    "on-screen height instead of a fixed spot (entry.anchorIndex) — that's a",
+    "position in messages.json, not something Word has a stable way to point",
+    "at, so it has no Word representation and won't survive a sync; set/edit",
+    "it directly in messages.json.",
+    "",
+    "For MSG/IMAGE lines where Marktplatz is speaking, you can tag which role",
+    "it's speaking as — e.g. \"MSG [Designer] Marktplatz 12:04\" — to set that",
+    "message's avatar icon and accent color (see the role table in main.js). ",
+    "Leave the tag off for the default brand look.",
     "",
     "Type {{name}} anywhere you want the visitor's own name to appear — it's",
     "replaced automatically once someone enters their name on the kiosk.",
@@ -60,7 +81,7 @@ HEADER_LINES = [
     "consistent color.",
 ]
 
-TYPE_RE = re.compile(r"^(DATE|SYSTEM|EVENT|MSG|IMAGE)\s+(.*)$", re.IGNORECASE)
+TYPE_RE = re.compile(r"^(DATE|SYSTEM|EVENT|MSG|IMAGE|LEVEL)\s+(.*)$", re.IGNORECASE)
 TIME_RE = re.compile(r"(\d{1,2}:\d{2})")
 LOCKED_RE = re.compile(r"^\[LOCKED:\s*(\w+)\b")
 
@@ -116,14 +137,21 @@ def export_docx(messages_path, docx_path):
         elif kind in ("date", "system", "event"):
             doc.add_paragraph(f"{kind.upper()} {entry.get('time', '')}")
             doc.add_paragraph(entry.get("text", ""))
+        elif kind == "level":
+            auto_tag = f" (auto:{entry['autoReveal']})" if entry.get("autoReveal") else ""
+            doc.add_paragraph(f"LEVEL {entry.get('level', '')} {entry.get('time', '')}{auto_tag}")
+            doc.add_paragraph(entry.get("title", ""))
+            doc.add_paragraph(entry.get("text", ""))
         elif kind == "msg":
             is_me = bool(entry.get("isMe"))
             sender = "You" if is_me else entry.get("sender", "")
+            role_tag = f"[{entry['role']}] " if entry.get("role") else ""
             suffix = " (me)" if is_me else ""
-            doc.add_paragraph(f"MSG {sender} {entry.get('time', '')}{suffix}")
+            doc.add_paragraph(f"MSG {role_tag}{sender} {entry.get('time', '')}{suffix}")
             doc.add_paragraph(entry.get("text", ""))
         elif kind == "image":
-            doc.add_paragraph(f"IMAGE {entry.get('sender', '')} {entry.get('time', '')}")
+            role_tag = f"[{entry['role']}] " if entry.get("role") else ""
+            doc.add_paragraph(f"IMAGE {role_tag}{entry.get('sender', '')} {entry.get('time', '')}")
             doc.add_paragraph(entry.get("caption", ""))
         else:
             raise ValueError(f"Don't know how to export entry type {kind!r}")
@@ -155,12 +183,34 @@ def split_blocks(lines):
     return blocks
 
 
+ROLE_RE = re.compile(r"^\[([^\]]+)\]\s*(.*)$")
+AUTO_REVEAL_RE = re.compile(r"\(auto:(\d+)\)\s*$")
+
+
 def parse_type_line(line):
     match = TYPE_RE.match(line.strip())
     if not match:
         return None
     kind = match.group(1).upper()
     rest = match.group(2).strip()
+
+    # Only meaningful on MSG/IMAGE (which role Marktplatz is speaking as),
+    # but harmless to strip unconditionally — no other kind's sender/level
+    # field is ever bracketed.
+    role = None
+    role_match = ROLE_RE.match(rest)
+    if role_match:
+        role = role_match.group(1)
+        rest = role_match.group(2)
+
+    # Only meaningful on LEVEL — how many entries right after it auto-play
+    # while the card is still up (see entry.autoReveal / handleLevelPopup
+    # in main.js) — but likewise harmless to strip unconditionally.
+    auto_reveal = None
+    auto_match = AUTO_REVEAL_RE.search(rest)
+    if auto_match:
+        auto_reveal = int(auto_match.group(1))
+        rest = rest[: auto_match.start()].strip()
 
     is_me = False
     if rest.endswith("(me)"):
@@ -172,7 +222,7 @@ def parse_type_line(line):
         raise ValueError(f"Missing hh:mm time in line: {line!r}")
     time = time_match.group(1)
     sender = rest[: time_match.start()].strip()
-    return kind, sender, time, is_me
+    return kind, sender, time, is_me, role, auto_reveal
 
 
 def reactions_key(entry):
@@ -206,7 +256,8 @@ def sync_from_docx(docx_path, messages_path, out_path=None):
             continue
         first_idx, type_line = non_empty[0]
         type_line = type_line.strip()
-        body = " ".join(l.strip() for l in block[first_idx + 1 :] if l.strip())
+        body_lines = [l.strip() for l in block[first_idx + 1 :] if l.strip()]
+        body = " ".join(body_lines)
 
         locked_match = LOCKED_RE.match(type_line)
         if locked_match:
@@ -228,10 +279,21 @@ def sync_from_docx(docx_path, messages_path, out_path=None):
         parsed = parse_type_line(type_line)
         if not parsed:
             raise ValueError(f"Couldn't parse block starting with: {type_line!r}")
-        kind, sender, time, is_me = parsed
+        kind, sender, time, is_me, role, auto_reveal = parsed
 
         if kind in ("DATE", "SYSTEM", "EVENT"):
             result.append({"type": kind.lower(), "time": time, "text": body})
+        elif kind == "LEVEL":
+            entry = {
+                "type": "level",
+                "level": int(sender) if sender.isdigit() else sender,
+                "time": time,
+                "title": body_lines[0] if body_lines else "",
+                "text": " ".join(body_lines[1:]),
+            }
+            if auto_reveal:
+                entry["autoReveal"] = auto_reveal
+            result.append(entry)
         elif kind == "MSG":
             entry = {"type": "msg", "time": time, "text": body}
             if is_me:
@@ -240,6 +302,8 @@ def sync_from_docx(docx_path, messages_path, out_path=None):
             else:
                 bg, fg, initial = color_for(sender, color_cache)
                 entry.update({"sender": sender, "initial": initial, "bg": bg, "fg": fg})
+                if role:
+                    entry["role"] = role
             matches = reactions_by_key.get(reactions_key(entry))
             if matches:
                 entry["reactions"] = matches.pop(0)
@@ -255,6 +319,8 @@ def sync_from_docx(docx_path, messages_path, out_path=None):
                 "fg": fg,
                 "caption": body,
             }
+            if role:
+                entry["role"] = role
             matches = reactions_by_key.get(reactions_key(entry))
             if matches:
                 entry["reactions"] = matches.pop(0)

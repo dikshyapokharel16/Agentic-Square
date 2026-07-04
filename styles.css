@@ -212,7 +212,7 @@ model-viewer {
 }
 
 .row.outgoing { align-self: flex-end; }
-.row.has-reactions { margin-bottom: 14px; }
+.row.has-reactions { margin-bottom: 18px; }
 .row.fade-out { animation: none; opacity: 0; transition: opacity .4s ease; }
 
 .chatbody.fade-out { opacity: 0; transition: opacity .4s ease; }
@@ -247,6 +247,14 @@ model-viewer {
     0 0 18px 8px rgba(191,84,104,.12);
 }
 
+.av-role {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+}
+
 .waheader .avatar.av-loci {
   background: radial-gradient(circle at 50% 50%,
     rgba(255,236,240,.95) 0%,
@@ -275,7 +283,7 @@ model-viewer {
 .bubble .name { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
 .bubble .text { font-size: 12.5px; color: #111; line-height: 1.35; }
 
-.msg-reactions { position: absolute; bottom: -9px; right: 6px; display: flex; gap: 3px; }
+.msg-reactions { position: absolute; bottom: -14px; right: 6px; display: flex; gap: 3px; }
 .bubble.outgoing .msg-reactions { right: auto; left: 6px; }
 
 .reaction-pill {
@@ -313,7 +321,12 @@ model-viewer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2.2% 6% .8%;
+  /* top padding is a max() of a fixed floor and a %, not just a % — vertical
+     padding percentages resolve against the element's *width*, so on a
+     tall phone panel a %-only value doesn't grow with the screen's height
+     and ends up too shallow to clear .screen's own rounded top corners,
+     clipping the clock/icons. */
+  padding: max(10px, 4%) 6% .8%;
   font-size: clamp(9px, .95vw, 12px);
   font-weight: 500;
   color: #111;
@@ -641,6 +654,35 @@ model-viewer {
   color: #93a89d;
 }
 
+/* ---------- reply-keyboard choice mode (tap options instead of typing) ---------- */
+.choice-options { display: none; flex-direction: column; gap: 8px; width: 100%; }
+
+.reply-keyboard.choice-mode .reply-field-row,
+.reply-keyboard.choice-mode .keyboard.compact { display: none; }
+.reply-keyboard.choice-mode .choice-options { display: flex; }
+
+.choice-btn {
+  appearance: none;
+  border: none;
+  background: #fff;
+  color: #111;
+  font-family: inherit;
+  font-size: clamp(10.5px, 1.15vw, 13.5px);
+  font-weight: 500;
+  text-align: left;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.choice-btn:active {
+  background: var(--accent-green);
+  color: #fff;
+}
+
 /* ---------- shared on-screen keyboard (full-size + compact) ---------- */
 .keyboard {
   display: flex;
@@ -767,6 +809,43 @@ model-viewer {
   cursor: pointer;
   padding: 0;
 }
+
+/* Level pop-up: same .ar-caption bubble as the reply prompt above, just
+   swapped into "level-mode" — a title row replaces the prompt's own
+   sentence-first layout, and the tap-to-reply/skip row is replaced with a
+   plain tap hint, since a level card isn't answerable, just dismissible
+   by tapping the card itself (see handleLevelPopup in main.js). */
+.ar-caption-level { display: none; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+/* Narrower than the reply prompt's own box — sitting closer to the phone
+   (see positionLevelCaption) left less room before the avatar column, so
+   the text wraps over more lines instead. */
+.ar-caption.level-mode { cursor: pointer; max-width: min(290px, 27vw); }
+.ar-caption.level-mode .ar-caption-level { display: flex; }
+.ar-caption.level-mode .ar-caption-actions { display: none; }
+
+.ar-caption-level-num {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent-terracotta);
+  white-space: nowrap;
+}
+
+.ar-caption-level-title { font-size: 16px; font-weight: 700; color: #111; }
+
+.ar-caption-tap-hint {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-green-dark);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.ar-caption.level-mode .ar-caption-tap-hint { display: flex; }
 
 /* ---------- in-phone reply keyboard (slides up from below, like a real phone) ---------- */
 .reply-keyboard {
