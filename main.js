@@ -89,9 +89,10 @@ const startBtn = document.getElementById("startBtn");
 const scanQrBtn = document.getElementById("scanQrBtn");
 
 /* ---------- intro: parallax background ----------
-   Mouse for desktop/browser preview; device-tilt for the actual touchscreen
-   kiosk, which has no mouse at all. If neither ever fires, the image just
-   stays centered — no error states, nothing else gated on this working. */
+   Mouse for desktop/browser preview; finger position for touchscreens (drag
+   across the intro, image shifts opposite the mouse case). If neither ever
+   fires, the image just stays centered — no error states, nothing else
+   gated on this working. */
 const introBg = document.getElementById("introBg");
 const PARALLAX_MAX_SHIFT = 24; // px
 
@@ -105,36 +106,14 @@ window.addEventListener("mousemove", (event) => {
   setParallax((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
 });
 
-function handleOrientation(event) {
-  if (event.gamma == null || event.beta == null) return;
-  setParallax(event.gamma / 30, (event.beta - 45) / 30);
+function handleTouch(event) {
+  const touch = event.touches[0];
+  if (!touch) return;
+  setParallax((touch.clientX / window.innerWidth) * 2 - 1, (touch.clientY / window.innerHeight) * 2 - 1);
 }
 
-let orientationBound = false;
-function bindDeviceOrientation() {
-  if (orientationBound || typeof DeviceOrientationEvent === "undefined") return;
-  orientationBound = true;
-  window.addEventListener("deviceorientation", handleOrientation);
-}
-
-// iOS requires an explicit user gesture to grant motion-sensor access —
-// piggyback on the first tap anywhere on the intro overlay. A silent no-op
-// (no prompt at all) on Android/desktop, where this API doesn't exist.
-introOverlay.addEventListener(
-  "click",
-  () => {
-    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
-      DeviceOrientationEvent.requestPermission()
-        .then((state) => {
-          if (state === "granted") bindDeviceOrientation();
-        })
-        .catch(() => {});
-    } else {
-      bindDeviceOrientation();
-    }
-  },
-  { once: true }
-);
+window.addEventListener("touchstart", handleTouch, { passive: true });
+window.addEventListener("touchmove", handleTouch, { passive: true });
 
 /* ---------- intro: story sequence ----------
    Auto-advancing narrative beats in a single reusable speech-bubble panel
@@ -288,6 +267,9 @@ function createViewer(stage) {
   viewer.setAttribute("ar-scale", "fixed");
   viewer.setAttribute("ar-placement", "floor");
   viewer.setAttribute("camera-controls", "");
+  // Radius as a % of model-viewer's own auto-framed distance - keeps the
+  // default auto angle/target per model, just moves the camera closer.
+  viewer.setAttribute("camera-orbit", "auto auto 85%");
   viewer.setAttribute("auto-rotate", "");
   viewer.setAttribute("shadow-intensity", "1");
   viewer.setAttribute("shadow-softness", "0.75");
@@ -298,7 +280,7 @@ function createViewer(stage) {
   viewer.addEventListener("ar-status", (event) => {
     if (event.detail.status === "session-started") {
       playing = false;
-    } else if (event.detail.status === "not-presenting" && !playing) {
+    } else if (event.detail.status === "not-presenting" && !playing && !scrubbing && !lightboxOpen) {
       playing = true;
       playLoop();
     }
@@ -348,7 +330,16 @@ function preloadStage(i) {
 
 function applyStage(i) {
   currentStage = Math.max(0, Math.min(i, STAGES.length - 1));
-  const stage = stageAt(currentStage);
+  showStageInViewer(currentStage);
+}
+
+// Updates the 3D viewer/poster to a given stage without touching the live
+// progress pointer (currentStage) - used both by applyStage for normal
+// forward playback and directly by scroll-scrub sync, which previews an
+// earlier stage while the visitor scrolls back through chat history
+// without derailing where autoplay will resume from.
+function showStageInViewer(i) {
+  const stage = stageAt(i);
   if (!stage) return;
 
   // Stages without a model yet keep whichever model is already showing —
@@ -356,7 +347,7 @@ function applyStage(i) {
   // looks broken just because a later stage's AR model hasn't been dropped in yet.
   if (!stage.glb) return;
 
-  preloadStage(currentStage + 1);
+  preloadStage(i + 1);
 
   if (!viewer) {
     createViewer(stage);
@@ -461,6 +452,113 @@ function scrollToBottom() {
   el.scrollTop = el.scrollHeight;
 }
 
+/* ---------- chat: scroll-scrub sync ----------
+   Scrolling away from the live bottom edge pauses autoplay (same idea as
+   the AR-session pause above) and syncs the 3D viewer to whichever stage's
+   image message is currently in view, using each stage-transition row's
+   data-stage-marker (set in renderEntry). Scrolling back to the bottom
+   snaps the viewer back to the true live stage and resumes autoplay where
+   it left off. `scrubbing` is also read by the ar-status handler above so
+   exiting AR doesn't resume playback out from under a scrolled-up visitor. */
+const SCROLL_BOTTOM_THRESHOLD = 32; // px
+let scrubbing = false;
+let scrubStage = -1;
+let scrollSyncQueued = false;
+
+function isAtChatBottom(el) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= SCROLL_BOTTOM_THRESHOLD;
+}
+
+// Of all stage markers scrolled to/past the vertical middle of the chat
+// panel, the last one (highest stage) is the "current" stage for that
+// scroll position - markers are in ascending DOM/stage order, so the loop
+// can stop at the first marker that hasn't been reached yet.
+function stageForScrollPosition(el) {
+  const markers = el.querySelectorAll("[data-stage-marker]");
+  const referenceY = el.getBoundingClientRect().top + el.clientHeight / 2;
+  let target = 0;
+  for (const marker of markers) {
+    if (marker.getBoundingClientRect().top <= referenceY) {
+      target = Number(marker.dataset.stageMarker);
+    } else {
+      break;
+    }
+  }
+  return target;
+}
+
+function syncStageToScrollPosition() {
+  const target = stageForScrollPosition(chatbody());
+  if (target !== scrubStage) {
+    scrubStage = target;
+    showStageInViewer(target);
+  }
+}
+
+chatbody().addEventListener(
+  "scroll",
+  () => {
+    const el = chatbody();
+    if (isAtChatBottom(el)) {
+      if (scrubbing) {
+        scrubbing = false;
+        scrubStage = -1;
+        showStageInViewer(currentStage); // snap back to the live stage
+        if (!playing && !lightboxOpen) {
+          playing = true;
+          playLoop();
+        }
+      }
+      return;
+    }
+
+    if (!scrubbing) {
+      scrubbing = true;
+      playing = false;
+    }
+
+    if (scrollSyncQueued) return;
+    scrollSyncQueued = true;
+    requestAnimationFrame(() => {
+      scrollSyncQueued = false;
+      syncStageToScrollPosition();
+    });
+  },
+  { passive: true }
+);
+
+/* ---------- chat: tap-to-enlarge shared images ----------
+   Opens inside the phone screen (the lightbox is a child of .screen, which
+   clips overflow) rather than covering the whole page. Pauses autoplay
+   the same way AR/scroll-scrub do, so new messages don't arrive underneath
+   while a visitor is looking at the photo. */
+const imageLightbox = document.getElementById("imageLightbox");
+const imageLightboxImg = document.getElementById("imageLightboxImg");
+let lightboxOpen = false;
+
+function openImageLightbox(src) {
+  imageLightboxImg.src = src;
+  imageLightbox.classList.remove("hidden");
+  requestAnimationFrame(() => imageLightbox.classList.add("show"));
+  lightboxOpen = true;
+  playing = false;
+}
+
+function closeImageLightbox() {
+  if (!lightboxOpen) return;
+  imageLightbox.classList.remove("show");
+  lightboxOpen = false;
+  setTimeout(() => imageLightbox.classList.add("hidden"), 200);
+  if (!playing && !scrubbing) {
+    playing = true;
+    playLoop();
+  }
+}
+
+imageLightbox.addEventListener("click", (event) => {
+  if (event.target === imageLightbox || event.target.id === "imageLightboxClose") closeImageLightbox();
+});
+
 function updatePhoneClock(entry) {
   if (!entry.time) return;
   const clock = document.getElementById("phoneClock");
@@ -563,6 +661,9 @@ function renderEntry(i, entry) {
     const poster = stage && stage.poster ? stage.poster : "";
     const row = document.createElement("div");
     row.className = "row";
+    // Marks where this stage begins in the chat log, so scroll-scrub sync
+    // (below) can tell which stage a given scroll position corresponds to.
+    row.dataset.stageMarker = currentStage;
     row.innerHTML = `
       ${avatarHTML(entry)}
       <div class="img-msg-bubble">
@@ -572,6 +673,7 @@ function renderEntry(i, entry) {
           <span class="img-time">${entry.time || ""}</span>
         </div>
       </div>`;
+    row.querySelector(".img-wrap img").addEventListener("click", () => openImageLightbox(poster));
     chatbody().appendChild(row);
     scrollToBottom();
     return;
