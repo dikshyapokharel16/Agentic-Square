@@ -1,78 +1,131 @@
 [
   {
+    "type": "level",
+    "level": 1,
+    "time": "08:00",
+    "title": "The idea",
+    "text": "A design or event idea can be raised by residents themselves (reactive) — or the AI can propose one on its own (active). Once a majority votes yes, planning begins.",
+    "autoReveal": 4,
+    "anchorIndex": 4
+  },
+  {
     "type": "date",
     "time": "08:30",
     "text": "Monday"
   },
   {
+    "type": "system",
+    "time": "08:30",
+    "text": "You joined the group"
+  },
+  {
     "type": "msg",
     "sender": "{{name}}",
     "time": "08:30",
-    "text": "Hi, I'm {{name}}, just found this group! What's this all about?",
+    "text": "Hi, I'm {{name}}, just found this group! 👋 What's this all about?",
     "isMe": true
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Host",
     "time": "08:31",
-    "text": "Welcome, {{name}}! I'm the market square right here in Westhagen. This neighbourhood designs me, builds me, and reshapes me together, piece by piece, right in this chat.",
+    "text": "Welcome, {{name}}! I'm the market square right here in Westhagen. This neighbourhood designs me, builds me, and reshapes me together, piece by piece, right in this chat. 🙂",
     "initial": "L",
     "bg": "#BF5468",
-    "fg": "#fbe7ea"
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👋",
+        "count": 14
+      },
+      {
+        "emoji": "🙂",
+        "count": 9
+      }
+    ]
   },
   {
-    "type": "choice",
+    "type": "userPrompt",
+    "mode": "choice",
     "time": "08:32",
-    "role": "Host",
-    "bg": "#BF5468",
-    "fg": "#fbe7ea",
-    "promptText": "Say something back?",
+    "promptText": "What's your first reaction?",
     "options": [
       {
         "label": "Ha, a talking square!",
-        "postText": "Haha wait, a talking square? Love it 😄",
-        "reply": "Ha, not every day a square gets to say hello back. Glad you're here, {{name}}!"
+        "text": "Haha wait, a talking square? Love it 😄",
+        "reply": {
+          "role": "Host",
+          "text": "Ha, not every day a square gets to say hello back. Glad you're here, {{name}}!"
+        }
       },
       {
         "label": "I want to join!",
-        "postText": "That's such a cool idea, I want to join!",
-        "reply": "That's exactly the spirit we need. Glad to have you, {{name}} — jump in whenever you like."
+        "text": "That's such a cool idea, I want to join!",
+        "reply": {
+          "role": "Host",
+          "text": "That's exactly the spirit we need. Glad to have you, {{name}} — jump in whenever you like."
+        }
       },
       {
         "label": "Tell me more",
-        "postText": "Okay now I'm curious, tell me more"
+        "text": "Okay now I'm curious, tell me more"
       }
     ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Host",
     "time": "08:33",
-    "text": "You're just in time — we've just decided to spend this summer building a playground for the kids here. We're calling it Westhagen Plays!",
+    "text": "You're just in time — we've just decided to spend this summer building a playground for the kids here. We're calling it Westhagen Plays! 🎉",
     "initial": "L",
     "bg": "#BF5468",
-    "fg": "#fbe7ea"
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 52
+      },
+      {
+        "emoji": "🙌",
+        "count": 27
+      }
+    ]
+  },
+  {
+    "type": "level",
+    "level": 2,
+    "time": "09:19",
+    "title": "Planning",
+    "text": "During planning, neighbours share and discuss what they want. Step by step, the AI translates their wishes into a concrete spatial design.",
+    "autoReveal": 2,
+    "anchorIndex": 9
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Voting officer",
     "time": "09:20",
-    "text": "Before we start planning anything – who's actually joining, and with how many kids? Quick poll, pick everything that applies to your household:",
+    "text": "Before we start planning anything 📋 – who's actually joining, and with how many kids? Quick poll, pick everything that applies to your household:",
     "initial": "L",
-    "bg": "#3d6b99",
-    "fg": "#e2ecf5"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 16
+      }
+    ]
   },
   {
     "type": "poll",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Voting officer",
     "time": "09:21",
     "initial": "L",
-    "bg": "#3d6b99",
-    "fg": "#e2ecf5",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "question": "Who's in, and with whom?",
     "options": [
       "Toddler (under 3)",
@@ -89,87 +142,156 @@
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Voting officer",
     "time": "08:51",
-    "text": "Poll's closed! Looks like there's quite a crowd – around 280 kids registered across all age groups. Realistically, we should plan for about 30 kids here at the same time. Workable number to design around.",
+    "text": "Poll's closed! Looks like there's quite a crowd – around 280 kids registered across all age groups. Realistically, we should plan for about 30 kids here at the same time. Workable number to design around. 👍",
     "initial": "L",
-    "bg": "#3d6b99",
-    "fg": "#e2ecf5"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 21
+      }
+    ],
+    "pollVotes": [
+      60,
+      140,
+      80,
+      45
+    ],
+    "pollClose": true
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Designer",
     "time": "08:54",
-    "text": "Alright, let's get into it then – what should we actually build here?",
+    "text": "Alright, let's get into it then – what should we actually build here? 🤔",
     "initial": "L",
-    "bg": "#7a4f99",
-    "fg": "#ece1f5"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🙌",
+        "count": 13
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Aylin",
     "time": "10:19",
-    "text": "A sandbox would be great for the little ones, somewhere separate from the big kids and low enough that I could sit right by it, watching my toddler play",
+    "text": "A sandbox would be great for the little ones, somewhere separate from the big kids and low enough that I could sit right by it, watching my toddler play 👶",
     "initial": "A",
-    "bg": "#6b3d8f",
-    "fg": "#ede2f6"
+    "bg": "#946938",
+    "fg": "#F7EEE3",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 19
+      },
+      {
+        "emoji": "💡",
+        "count": 7
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Klaus",
     "time": "10:23",
-    "text": "We've still got some leftover sand from the raised beds last year, that should help with the build",
+    "text": "We've still got some leftover sand from the raised beds last year, that should help with the build ♻️",
     "initial": "K",
-    "bg": "#5a6b8f",
-    "fg": "#e6eaf5"
+    "bg": "#948F38",
+    "fg": "#F7F6E3",
+    "reactions": [
+      {
+        "emoji": "♻️",
+        "count": 10
+      }
+    ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Resource manager",
     "time": "10:24",
-    "text": "Nice, every bit we can reuse helps.",
+    "text": "Nice, every bit we can reuse helps. ♻️",
     "initial": "L",
-    "bg": "#4f8f5a",
-    "fg": "#e1f4e6"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 8
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Dorota",
     "time": "13:42",
-    "text": "Let's also do something for the bigger kids! Running and climbing, not just sitting and digging",
+    "text": "Let's also do something for the bigger kids! Running and climbing, not just sitting and digging 🏃",
     "initial": "D",
-    "bg": "#8f7a2f",
-    "fg": "#f7f1de"
+    "bg": "#386F94",
+    "fg": "#E3EFF7",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 17
+      },
+      {
+        "emoji": "🏃",
+        "count": 6
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Jens",
     "time": "14:33",
-    "text": "Maybe a wall they can climb up and jump off, and a small pallet climbing frame for the little ones too? My kids would love that, and we've still got loads of pallets in storage",
+    "text": "Maybe a wall they can climb up and jump off, and a small pallet climbing frame for the little ones too? My kids would love that, and we've still got loads of pallets in storage 🧗",
     "initial": "J",
-    "bg": "#5a8f3d",
-    "fg": "#eef6e2"
+    "bg": "#943889",
+    "fg": "#F7E3F5",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 13
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Heike",
     "time": "17:12",
-    "text": "After all that running around they're gonna want somewhere to just sit for a sec too",
+    "text": "After all that running around they're gonna want somewhere to just sit for a sec too 😅",
     "initial": "H",
-    "bg": "#8f4b6b",
-    "fg": "#f7e6ec"
+    "bg": "#869438",
+    "fg": "#F4F7E3",
+    "reactions": [
+      {
+        "emoji": "😅",
+        "count": 9
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Ines",
     "time": "17:27",
-    "text": "Something built right into the play area itself would be nice, like little brick steps or blocks they can perch on, not just benches off to the side",
+    "text": "Something built right into the play area itself would be nice, like little brick steps or blocks they can perch on, not just benches off to the side 🧱",
     "initial": "I",
-    "bg": "#3d6b5c",
-    "fg": "#dcece6"
+    "bg": "#6E3894",
+    "fg": "#EFE3F7",
+    "reactions": [
+      {
+        "emoji": "💡",
+        "count": 11
+      }
+    ]
   },
   {
     "type": "msg",
@@ -177,8 +299,14 @@
     "time": "19:32",
     "text": "Could we get a table tennis table too? Always such a hit 🏓",
     "initial": "S",
-    "bg": "#6b3d5c",
-    "fg": "#ecdce6"
+    "bg": "#6D3894",
+    "fg": "#EFE3F7",
+    "reactions": [
+      {
+        "emoji": "🏓",
+        "count": 15
+      }
+    ]
   },
   {
     "type": "msg",
@@ -186,28 +314,49 @@
     "time": "19:47",
     "text": "Yes please, last year's was constantly taken — let's just do two this time, way less fighting over it 😂",
     "initial": "S",
-    "bg": "#534ab7",
-    "fg": "#eeedfe"
+    "bg": "#947A38",
+    "fg": "#F7F1E3",
+    "reactions": [
+      {
+        "emoji": "😂",
+        "count": 12
+      }
+    ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Designer",
     "time": "20:48",
-    "text": "Okay, lots to work with here – give me a bit to sketch this out properly.",
+    "text": "Okay, lots to work with here – give me a bit to sketch this out properly. ✏️",
     "initial": "L",
-    "bg": "#7a4f99",
-    "fg": "#ece1f5"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 10
+      }
+    ]
   },
   {
     "type": "image",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Designer",
     "time": "20:50",
     "initial": "L",
-    "bg": "#7a4f99",
-    "fg": "#ece1f5",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "caption": "first layout — toddler sandbox, zone for the older kids, jumping wall and pallet climbing frame, brick seating, and two table tennis tables sketched in"
+  },
+  {
+    "type": "level",
+    "level": 3,
+    "time": "11:20",
+    "title": "Conflict",
+    "text": "When residents' needs collide, the AI steps in as a mediator. Helping to find a solution that works for everyone, not just the loudest voice.",
+    "autoReveal": 4,
+    "anchorIndex": 28
   },
   {
     "type": "date",
@@ -220,17 +369,29 @@
     "time": "11:21",
     "text": "What about giving them somewhere to actually hide? Not just open space",
     "initial": "E",
-    "bg": "#997a4f",
-    "fg": "#f5ecdf"
+    "bg": "#669438",
+    "fg": "#EDF7E3",
+    "reactions": [
+      {
+        "emoji": "💡",
+        "count": 14
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Sabine",
     "time": "11:36",
-    "text": "A wall around part of it could work, gives a bit of a hideaway corner",
+    "text": "A wall around part of it could work, gives a bit of a hideaway corner 🏰",
     "initial": "S",
-    "bg": "#4f9999",
-    "fg": "#e0f3f3"
+    "bg": "#719438",
+    "fg": "#F0F7E3",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 9
+      }
+    ]
   },
   {
     "type": "msg",
@@ -238,8 +399,14 @@
     "time": "11:42",
     "text": "Careful with that though, the taller and more enclosed it gets, the more nervous that makes me, don't love the idea of a spot where I actually lose sight of my kid for a minute",
     "initial": "K",
-    "bg": "#5a6b8f",
-    "fg": "#e6eaf5"
+    "bg": "#948F38",
+    "fg": "#F7F6E3",
+    "reactions": [
+      {
+        "emoji": "😬",
+        "count": 7
+      }
+    ]
   },
   {
     "type": "msg",
@@ -247,8 +414,14 @@
     "time": "11:48",
     "text": "But that's kind of the whole point though, if you can see straight in it's not really hiding, just standing behind a wall",
     "initial": "E",
-    "bg": "#997a4f",
-    "fg": "#f5ecdf"
+    "bg": "#669438",
+    "fg": "#EDF7E3",
+    "reactions": [
+      {
+        "emoji": "🤔",
+        "count": 5
+      }
+    ]
   },
   {
     "type": "msg",
@@ -256,66 +429,119 @@
     "time": "11:54",
     "text": "I get that it's the actual point of the game, just don't know how that works without it also being a blind spot for us",
     "initial": "S",
-    "bg": "#4f9999",
-    "fg": "#e0f3f3"
+    "bg": "#719438",
+    "fg": "#F0F7E3",
+    "reactions": [
+      {
+        "emoji": "🤔",
+        "count": 6
+      }
+    ]
   },
   {
     "type": "userPrompt",
+    "mode": "keywords",
     "time": "11:56",
-    "role": "Mediator",
-    "bg": "#8f5a7a",
-    "fg": "#f5e6ee",
     "promptText": "What would you do here?",
     "placeholder": "Type your idea…",
     "buckets": [
       {
-        "keywords": ["height", "tall", "short", "metre", "meter", "low", "size"],
-        "reply": "That's a really good idea — that could actually be the solution. If it's built to around a metre, that's over a small kid's head, so it still blocks their view and feels hidden, but adults are tall enough to just glance over the top without even trying."
+        "match": [
+          "height",
+          "high",
+          "tall",
+          "short",
+          "metre",
+          "low",
+          "size"
+        ],
+        "reply": {
+          "role": "Mediator",
+          "time": "11:57",
+          "text": "That's a really good idea — that could actually be the solution. If it's built to around a metre, that's over a small kid's head, so it still blocks their view and feels hidden, but adults are tall enough to just glance over the top without even trying."
+        }
       },
       {
-        "keywords": ["gap", "window", "hole", "peek", "see-through", "see through"],
-        "reply": "Mmh, yeah, that would've been my first instinct too — but something just occurred to me. What if the wall's just built to about a metre instead? That's over a small kid's head, so it still feels properly hidden to them, but adults could glance right over without even trying."
+        "match": [
+          "gap",
+          "window",
+          "hole",
+          "peek",
+          "see-through",
+          "see through"
+        ],
+        "reply": {
+          "role": "Mediator",
+          "time": "11:57",
+          "text": "Mmh, yeah, that would've been my first instinct too — but something just occurred to me. What if the wall's just built to about a metre instead? That's over a small kid's head, so it still feels properly hidden to them, but adults could glance right over without even trying."
+        }
       }
     ],
-    "fallbackReply": "Ooh, that's an interesting angle. Actually, something just occurred to me — what if the wall's built to around a metre? That's over a small kid's head, so it still blocks their view and feels hidden, but adults are tall enough to glance over without even trying."
+    "fallbackReply": {
+      "role": "Mediator",
+      "time": "11:57",
+      "text": "Ooh, that's an interesting angle. Actually, something just occurred to me — what if the wall's built to around a metre? That's over a small kid's head, so it still blocks their view and feels hidden, but adults are tall enough to glance over without even trying."
+    }
   },
   {
     "type": "msg",
     "sender": "Marie",
     "time": "12:00",
-    "text": "Or maybe a little labyrinth in the middle too, way more fun to get lost in than just a wall",
+    "text": "Or maybe a little labyrinth in the middle too, way more fun to get lost in than just a wall 😄",
     "initial": "M",
-    "bg": "#3d7a8f",
-    "fg": "#e2f1f4"
+    "bg": "#5A3894",
+    "fg": "#EBE3F7",
+    "reactions": [
+      {
+        "emoji": "😄",
+        "count": 16
+      },
+      {
+        "emoji": "👍",
+        "count": 8
+      }
+    ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Designer",
     "time": "12:04",
-    "text": "Good addition, those actually work really well together. Let me put it together.",
+    "text": "Good addition, those actually work really well together. Let me put it together. 🙌",
     "initial": "L",
-    "bg": "#7a4f99",
-    "fg": "#ece1f5"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🙌",
+        "count": 11
+      }
+    ]
   },
   {
     "type": "image",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Designer",
     "time": "12:05",
     "initial": "L",
-    "bg": "#7a4f99",
-    "fg": "#ece1f5",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "caption": "curved wall (~1m, no sharp corners) and a central labyrinth added to the play zone"
   },
   {
     "type": "msg",
     "sender": "Klaus",
     "time": "12:07",
-    "text": "Oh, that's actually clever, and still glanceable from where we'd actually be standing",
+    "text": "Oh, that's actually clever, and still glanceable from where we'd actually be standing 👏",
     "initial": "K",
-    "bg": "#5a6b8f",
-    "fg": "#e6eaf5"
+    "bg": "#948F38",
+    "fg": "#F7F6E3",
+    "reactions": [
+      {
+        "emoji": "👏",
+        "count": 13
+      }
+    ]
   },
   {
     "type": "date",
@@ -326,33 +552,50 @@
     "type": "msg",
     "sender": "Sarah",
     "time": "09:16",
-    "text": "Been quietly following all of this, you guys come up with really cool stuff! As someone without kids myself though, I'd love some nice seating for the rest of us too, not just the parents on bench duty",
+    "text": "Been quietly following all of this, you guys come up with really cool stuff! As someone without kids myself though, I'd love some nice seating for the rest of us too, not just the parents on bench duty 🌿",
     "initial": "S",
-    "bg": "#7d4f8f",
-    "fg": "#f1e1f4"
+    "bg": "#389491",
+    "fg": "#E3F7F6",
+    "reactions": [
+      {
+        "emoji": "🌿",
+        "count": 10
+      },
+      {
+        "emoji": "👍",
+        "count": 6
+      }
+    ]
   },
   {
-    "type": "choice",
+    "type": "userPrompt",
+    "mode": "choice",
     "time": "09:18",
-    "role": "Designer",
-    "bg": "#7a4f99",
-    "fg": "#ece1f5",
     "promptText": "What would make a spot like that nice to sit in?",
     "options": [
       {
         "label": "Add some greenery too",
-        "postText": "I think that's a great idea, could add some greenery too, for a bit of shade",
-        "reply": "Both really good ideas, and they'd combine nicely — I can build the whole thing out of pallets we've already got, so it barely touches the budget."
+        "text": "I think that's a great idea, could add some greenery too, for a bit of shade",
+        "reply": {
+          "role": "Designer",
+          "text": "Both really good ideas, and they'd combine nicely — I can build the whole thing out of pallets we've already got, so it barely touches the budget."
+        }
       },
       {
         "label": "Planting beds for kids",
-        "postText": "I think that's a great idea, could add some little planting beds too, where the kids could grow something themselves",
-        "reply": "Love that, easy to combine both — and I can add a bit more greenery too, like a tree or two, for some proper shade."
+        "text": "I think that's a great idea, could add some little planting beds too, where the kids could grow something themselves",
+        "reply": {
+          "role": "Designer",
+          "text": "Love that, easy to combine both — and I can add a bit more greenery too, like a tree or two, for some proper shade."
+        }
       },
       {
         "label": "Just simple benches",
-        "postText": "Agreed, just a few simple benches would already be lovely",
-        "reply": "Let's do that then. One idea from me — maybe also a bit of greenery for some shade, what do you all think?"
+        "text": "Agreed, just a few simple benches would already be lovely",
+        "reply": {
+          "role": "Designer",
+          "text": "Let's do that then. One idea from me — maybe also a bit of greenery for some shade, what do you all think?"
+        }
       }
     ]
   },
@@ -360,57 +603,85 @@
     "type": "msg",
     "sender": "Priya",
     "time": "09:25",
-    "text": "Sounds good, let's do that",
+    "text": "Sounds good, let's do that 👍",
     "initial": "P",
-    "bg": "#8f3d3d",
-    "fg": "#f7e3e3"
+    "bg": "#579438",
+    "fg": "#EAF7E3",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 9
+      }
+    ]
   },
   {
     "type": "msg",
     "sender": "Dorota",
     "time": "09:26",
-    "text": "Works for me too",
+    "text": "Works for me too 🙌",
     "initial": "D",
-    "bg": "#8f7a2f",
-    "fg": "#f7f1de"
+    "bg": "#386F94",
+    "fg": "#E3EFF7",
+    "reactions": [
+      {
+        "emoji": "🙌",
+        "count": 6
+      }
+    ]
   },
   {
     "type": "image",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Designer",
     "time": "10:26",
     "initial": "L",
-    "bg": "#7a4f99",
-    "fg": "#ece1f5",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "caption": "full final layout — pallet-and-planter seating and trees added around the square"
   },
   {
     "type": "msg",
     "sender": "Dorota",
     "time": "10:29",
-    "text": "Wow, this looks amazing, can't believe it's all coming together this fast",
+    "text": "Wow, this looks amazing, can't believe it's all coming together this fast 😍",
     "initial": "D",
-    "bg": "#8f7a2f",
-    "fg": "#f7f1de"
+    "bg": "#386F94",
+    "fg": "#E3EFF7",
+    "reactions": [
+      {
+        "emoji": "😍",
+        "count": 22
+      }
+    ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Voting officer",
     "time": "10:31",
-    "text": "Alright, I think that's a full design. Before I lock anything in — everyone happy with this?",
+    "text": "Alright, I think that's a full design. Before I lock anything in — everyone happy with this? 🙋",
     "initial": "L",
-    "bg": "#3d6b99",
-    "fg": "#e2ecf5"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🙋",
+        "count": 26
+      },
+      {
+        "emoji": "👍",
+        "count": 15
+      }
+    ]
   },
   {
     "type": "poll",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Voting officer",
     "time": "10:32",
     "initial": "L",
-    "bg": "#3d6b99",
-    "fg": "#e2ecf5",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "question": "Ready to build this?",
     "options": [
       "Yes, let's do it!",
@@ -424,89 +695,167 @@
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Voting officer",
     "time": "10:40",
-    "text": "Poll's closed! Big yes across the board — let's make this official.",
+    "text": "Poll's closed! Big yes across the board — let's make this official. 🎉",
     "initial": "L",
-    "bg": "#3d6b99",
-    "fg": "#e2ecf5"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 165
+      },
+      {
+        "emoji": "🙌",
+        "count": 88
+      }
+    ],
+    "pollVotes": [
+      610,
+      38
+    ],
+    "pollClose": true
+  },
+  {
+    "type": "level",
+    "level": 4,
+    "time": "10:41",
+    "title": "Agreement",
+    "text": "Once the neighbourhood agrees on a design, the AI turns it into a printable site plan and a step-by-step building manual.",
+    "autoReveal": 1,
+    "anchorIndex": 48
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Documentation",
     "time": "10:42",
-    "text": "I think that's everything – let me pull together the final site plan and a step-by-step build guide.",
+    "text": "I think that's everything – let me pull together the final site plan and a step-by-step build guide. 📄",
     "initial": "L",
-    "bg": "#4f7a8f",
-    "fg": "#e1eef2"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "📄",
+        "count": 19
+      }
+    ]
   },
   {
     "type": "file",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Documentation",
     "time": "10:43",
     "initial": "L",
-    "bg": "#4f7a8f",
-    "fg": "#e1eef2",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "fileName": "WESTHAGENPLAYS!_MASTERPLAN.pdf",
     "fileSub": "PDF document"
   },
   {
     "type": "file",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Documentation",
     "time": "10:44",
     "initial": "L",
-    "bg": "#4f7a8f",
-    "fg": "#e1eef2",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "fileName": "WESTHAGENPLAYS!_BUILD_MANUAL.pdf",
     "fileSub": "PDF document"
   },
   {
-    "type": "msg",
-    "sender": "Westhagen Marktplatz",
-    "role": "Administrative liaison",
-    "time": "10:46",
-    "text": "Great work, everyone. I'll take it from here – this still needs sign-off from the city before we can actually build. I'll get that sorted and keep you posted.",
-    "initial": "L",
-    "bg": "#5c5c5c",
-    "fg": "#ececec"
+    "type": "level",
+    "level": 5,
+    "time": "10:45",
+    "title": "Approval",
+    "text": "Before anything can actually be built, the city has to approve the design. The AI takes over communication with the relevant authorities.",
+    "autoReveal": 1,
+    "anchorIndex": 52
   },
   {
-    "type": "system",
+    "type": "msg",
+    "sender": "Marktplatz",
+    "role": "Administrative liaison",
     "time": "10:46",
+    "text": "Great work, everyone. I'll take it from here – this still needs sign-off from the city before we can actually build. I'll get that sorted and keep you posted. 🏛️",
+    "initial": "L",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "👍",
+        "count": 23
+      }
+    ]
+  },
+  {
+    "type": "level",
+    "level": 6,
+    "time": "10:47",
+    "title": "Build day",
+    "text": "Once the city has said yes, the AI helps organise the build itself: defining tasks, assigning helpers, and setting a date.",
+    "autoReveal": 4,
+    "anchorIndex": 57
+  },
+  {
+    "type": "event",
+    "time": "09:09",
     "text": "— a few weeks later —"
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Administrative liaison",
     "time": "09:10",
-    "text": "Update: permit's through! We're good to go.",
+    "text": "Update: permit's through! We're good to go. 🎉",
     "initial": "L",
-    "bg": "#5c5c5c",
-    "fg": "#ececec"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🎉",
+        "count": 380
+      },
+      {
+        "emoji": "🙌",
+        "count": 210
+      },
+      {
+        "emoji": "❤️",
+        "count": 95
+      }
+    ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Event planner",
     "time": "09:12",
-    "text": "Let's get building then – here's what we'll need hands for, and roughly how many for each:",
+    "text": "Let's get building then – here's what we'll need hands for, and roughly how many for each: 🔨",
     "initial": "L",
-    "bg": "#b3792e",
-    "fg": "#fbeeda"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "🔨",
+        "count": 31
+      },
+      {
+        "emoji": "💪",
+        "count": 16
+      }
+    ]
   },
   {
     "type": "poll",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Event planner",
     "time": "09:13",
     "initial": "L",
-    "bg": "#b3792e",
-    "fg": "#fbeeda",
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
     "question": "What can you help with on Building Day?",
     "options": [
       "Brickwork",
@@ -515,35 +864,68 @@
       "Food & drinks for the crew"
     ],
     "multi": true,
-    "needed": [8, 6, 4, 3]
+    "needed": [
+      8,
+      6,
+      4,
+      3
+    ]
   },
   {
     "type": "msg",
     "sender": "Dorota",
     "time": "09:40",
-    "text": "Count me in for planting",
+    "text": "Count me in for planting 🌱",
     "initial": "D",
-    "bg": "#8f7a2f",
-    "fg": "#f7f1de"
+    "bg": "#386F94",
+    "fg": "#E3EFF7",
+    "reactions": [
+      {
+        "emoji": "🌱",
+        "count": 7
+      }
+    ],
+    "pollVotes": [
+      6,
+      5,
+      2,
+      2
+    ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Event planner",
     "time": "09:45",
-    "text": "Looking solid across the board already, thanks for jumping in.",
+    "text": "Looking solid across the board already, thanks for jumping in. 💪",
     "initial": "L",
-    "bg": "#b3792e",
-    "fg": "#fbeeda"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "💪",
+        "count": 13
+      }
+    ]
   },
   {
     "type": "msg",
-    "sender": "Westhagen Marktplatz",
+    "sender": "Marktplatz",
     "role": "Event planner",
     "time": "09:47",
-    "text": "I've pencilled in Saturday, July 4th – Building Day! See you all there.",
+    "text": "I've pencilled in Saturday, July 4th – Building Day! See you all there. 📅",
     "initial": "L",
-    "bg": "#b3792e",
-    "fg": "#fbeeda"
+    "bg": "#BF5468",
+    "fg": "#fbe7ea",
+    "reactions": [
+      {
+        "emoji": "📅",
+        "count": 46
+      },
+      {
+        "emoji": "🎉",
+        "count": 21
+      }
+    ]
   }
 ]

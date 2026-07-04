@@ -123,21 +123,3 @@ origin won't work for AR on most devices, even on the same Wi-Fi.
 - **Confirm on the real pipeline:** push the branch — this repo is linked to
   Vercel, so every push gets a normal HTTPS preview deployment URL to check
   before merging.
-
-## Chat script (`chat-script.docx`)
-
-The chat script lives in `../chat-script.docx` — a Word document editors (no
-JSON knowledge needed) use to write dialogue. Requires Python with
-`python-docx`: `pip install python-docx`.
-
-```
-python chat_docx.py export   # regenerate chat-script.docx from messages.json
-python chat_docx.py sync     # regenerate messages.json from chat-script.docx
-```
-
-Only plain dialogue (dates, system notes, messages, image/stage changes) is
-editable in the doc — see the instructions at the top of the document itself.
-Polls, file shares, and the visitor reply-prompt show up as non-editable
-`[LOCKED: ...]` lines; edit those directly in `messages.json` instead.
-`export` always regenerates from the current `messages.json`, so run it again
-after any direct JSON edits to keep the Word doc in sync.
