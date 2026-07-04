@@ -16,18 +16,16 @@ No build step — `index.html`, `main.js`, `styles.css` are loaded directly as s
 
 **Deploy:** push to `main` — Vercel auto-deploys from GitHub (see commit `096336f`). `vercel.json` only sets `Content-Type`/`Cache-Control` headers for `models/*.glb`/`*.usdz`/`*.webp`.
 
-### 3D model scaling (`tools/`)
+### 3D model scaling (`tools/`, see `tools/README.md` for the full pipeline)
 
 SketchUp/Blender exports come in ~20x oversized. Run raw exports through these before dropping into `models/stage-NN/`:
 
 ```
-node fix-glb-scale.mjs <raw.glb> ../models/stage-NN/model.glb 0.0114   # Android
-python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.0114   # iOS
+node fix-glb-scale.mjs <raw.glb> ../models/stage-NN/model.glb 0.0114        # Android — multiplier on the current file
+python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.04556   # iOS — absolute factor on the raw export, NOT the same number as .glb's
 ```
 
-`0.0114` is the current room-scale factor (fits a 2m×2m AR tracking area, longest side ~1.8m) — used for stages 00–05. One-time setup: `npm install` in `tools/` (needs `@gltf-transform/core`); Python side needs `pip install usd-core`.
-
-`fix-glb-scale.mjs` also Draco-compresses geometry on the way out — expect a size reduction printed to the console.
+**`.glb` and `.usdz` need different factor *values*, not just different flags** — they're independent export pipelines with different baked-in prior scale corrections, so the same raw model needs a different number per format. Verify actual size (not just the factor) with `node inspect-glb.mjs <path>` / `python inspect-usdz.py <path>` — target ~1.8m longest side in a 2m×2m AR tracking area. `fix-glb-scale.mjs` and `fix-usdz-scale.py` also resize/re-encode textures (2048×2048 max) — oversized textures, not geometry, are usually the biggest win on load time; `fix-glb-scale.mjs` additionally simplifies geometry (meshoptimizer) and Draco-compresses on the way out. One-time setup: `npm install` in `tools/` (needs `@gltf-transform/core`); Python side needs `pip install usd-core Pillow`.
 
 **Cache-busting for models:** `.glb`/`.usdz`/`.webp` are served with `Cache-Control: max-age=3600` (`vercel.json`) and their URLs never change between deploys. `main.js`'s `MODEL_VERSION` constant is appended as `?v=N` to every model/poster URL — **bump it whenever a stage's model file is regenerated**, or devices that fetched the old file within the last hour keep serving the stale one.
 
@@ -39,7 +37,7 @@ Everything runs client-side in `main.js` after `index.html` loads `stages.json` 
 
 ### Two independent state machines driven by scroll, not a timer
 
-- **`STAGES`** (from `stages.json`): ordered list of `{glb, usdz, poster}` per design stage. `applyStage(i)` swaps the `<model-viewer>` `src`/`ios-src`/`poster`. Stages without a `glb` yet (currently 6–12) keep showing whichever model is already loaded — the story never looks "broken" just because a later stage's model hasn't been dropped in.
+- **`STAGES`** (from `stages.json`): ordered list of `{glb, usdz, poster}` per design stage — currently 4 stages (00–03), all populated. `applyStage(i)` swaps the `<model-viewer>` `src`/`ios-src`/`poster`; if a stage ever ships without a `glb` (e.g. while a new one is mid-production), it keeps showing whichever model is already loaded rather than looking "broken".
 - **`MESSAGES`** (from `messages.json`, personalized copy of `RAW_MESSAGES`): the chat script. Content is **scroll-revealed, not autoplayed** — `revealIdx` only advances when the visitor scrolls `.chatbody` toward its current bottom (`fillViewport()`, triggered by a scroll listener, `resize`, and after every reveal). `revealNext()` plays the typing-dots beat first for every message-shaped entry (`msg`/`poll`/`image`/`file` — sender or visitor alike) before swapping it for the real bubble via `renderEntry()`. A `#reveal-spacer` element keeps `.chatbody` scrollable even when revealed content doesn't yet overflow it, so the scroll listener always has something to fire on; it's removed once the story ends.
 - A `type:"image"` entry is the sync point: `renderEntry` increments `currentStage` and calls `applyStage()` — so the *order and count* of `image` entries in `messages.json` must match the intended stage sequence in `stages.json`.
 

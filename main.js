@@ -30,7 +30,7 @@ function stageAt(i) {
 // before a re-scale can keep serving the stale one for up to an hour.
 // Bump this whenever a stage's model file is regenerated so every deploy
 // forces a fresh fetch regardless of that cache.
-const MODEL_VERSION = "4";
+const MODEL_VERSION = "10";
 
 function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
@@ -300,6 +300,7 @@ function createViewer(stage) {
   viewer.setAttribute("camera-controls", "");
   viewer.setAttribute("auto-rotate", "");
   viewer.setAttribute("shadow-intensity", "1");
+  viewer.setAttribute("shadow-softness", "0.75");
   viewer.setAttribute("loading", "eager");
 
   // Pause the story while the user is actually in AR, so it doesn't keep
