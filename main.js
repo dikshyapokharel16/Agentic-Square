@@ -11,6 +11,9 @@ let revealIdx = 0;
 let revealing = false;
 let arPaused = false;
 let storyFinished = false;
+let scrubbing = false; // scrolled away from the live bottom, previewing an earlier stage
+let scrubStage = -1; // stage currently previewed while scrubbing, -1 when not scrubbing
+let lightboxOpen = false; // an enlarged chat image is showing
 let firstImageIdx = -1; // computed once MESSAGES loads — see init
 
 async function loadJSON(path) {
@@ -91,9 +94,10 @@ const startBtn = document.getElementById("startBtn");
 const scanQrBtn = document.getElementById("scanQrBtn");
 
 /* ---------- intro: parallax background ----------
-   Mouse for desktop/browser preview; device-tilt for the actual touchscreen
-   kiosk, which has no mouse at all. If neither ever fires, the image just
-   stays centered — no error states, nothing else gated on this working. */
+   Mouse for desktop/browser preview; finger position for touchscreens (drag
+   across the intro, image shifts opposite the mouse case). If neither ever
+   fires, the image just stays centered, no error states, nothing else
+   gated on this working. */
 const introBg = document.getElementById("introBg");
 const PARALLAX_MAX_SHIFT = 24; // px
 
@@ -107,36 +111,14 @@ window.addEventListener("mousemove", (event) => {
   setParallax((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
 });
 
-function handleOrientation(event) {
-  if (event.gamma == null || event.beta == null) return;
-  setParallax(event.gamma / 30, (event.beta - 45) / 30);
+function handleTouch(event) {
+  const touch = event.touches[0];
+  if (!touch) return;
+  setParallax((touch.clientX / window.innerWidth) * 2 - 1, (touch.clientY / window.innerHeight) * 2 - 1);
 }
 
-let orientationBound = false;
-function bindDeviceOrientation() {
-  if (orientationBound || typeof DeviceOrientationEvent === "undefined") return;
-  orientationBound = true;
-  window.addEventListener("deviceorientation", handleOrientation);
-}
-
-// iOS requires an explicit user gesture to grant motion-sensor access —
-// piggyback on the first tap anywhere on the intro overlay. A silent no-op
-// (no prompt at all) on Android/desktop, where this API doesn't exist.
-introOverlay.addEventListener(
-  "click",
-  () => {
-    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
-      DeviceOrientationEvent.requestPermission()
-        .then((state) => {
-          if (state === "granted") bindDeviceOrientation();
-        })
-        .catch(() => {});
-    } else {
-      bindDeviceOrientation();
-    }
-  },
-  { once: true }
-);
+window.addEventListener("touchstart", handleTouch, { passive: true });
+window.addEventListener("touchmove", handleTouch, { passive: true });
 
 /* ---------- intro: story sequence ----------
    Auto-advancing narrative beats in a single reusable speech-bubble panel
@@ -265,6 +247,9 @@ function startExperience(name) {
   revealIdx = 0;
   storyFinished = false;
   arPaused = false;
+  scrubbing = false;
+  scrubStage = -1;
+  lightboxOpen = false;
   // Defensive: normally already empty (the end-of-story reset clears it),
   // but guarantees a clean slate regardless of how chatbody got into
   // whatever state it was in before this particular start.
@@ -276,6 +261,9 @@ function startExperience(name) {
 function resetToIntro() {
   revealIdx = 0;
   storyFinished = false;
+  scrubbing = false;
+  scrubStage = -1;
+  lightboxOpen = false;
   POLL_STATE = {};
   activePollIndex = null;
   currentStage = 0;
@@ -298,6 +286,9 @@ function createViewer(stage) {
   viewer.setAttribute("ar-scale", "fixed");
   viewer.setAttribute("ar-placement", "floor");
   viewer.setAttribute("camera-controls", "");
+  // Radius as a % of model-viewer's own auto-framed distance, keeps the
+  // default auto angle/target per model, just moves the camera closer.
+  viewer.setAttribute("camera-orbit", "auto auto 85%");
   viewer.setAttribute("auto-rotate", "");
   viewer.setAttribute("shadow-intensity", "1");
   viewer.setAttribute("shadow-softness", "0.75");
@@ -359,7 +350,16 @@ function preloadStage(i) {
 
 function applyStage(i) {
   currentStage = Math.max(0, Math.min(i, STAGES.length - 1));
-  const stage = stageAt(currentStage);
+  showStageInViewer(currentStage);
+}
+
+// Updates the 3D viewer/poster to a given stage without touching the live
+// progress pointer (currentStage), used both by applyStage for normal
+// forward playback and directly by scroll-scrub sync below, which previews
+// an already-revealed earlier stage while the visitor scrolls back through
+// chat history without derailing where revealing resumes from.
+function showStageInViewer(i) {
+  const stage = stageAt(i);
   if (!stage) return;
 
   // Stages without a model yet keep whichever model is already showing —
@@ -367,7 +367,7 @@ function applyStage(i) {
   // looks broken just because a later stage's AR model hasn't been dropped in yet.
   if (!stage.glb) return;
 
-  preloadStage(currentStage + 1);
+  preloadStage(i + 1);
 
   if (!viewer) {
     createViewer(stage);
@@ -642,6 +642,9 @@ function renderEntry(i, entry) {
     const row = document.createElement("div");
     row.className = "row";
     row.dataset.msgIndex = i;
+    // Marks where this stage begins in the chat log, so scroll-scrub sync
+    // (below) can tell which stage a given scroll position corresponds to.
+    row.dataset.stageMarker = currentStage;
     row.innerHTML = `
       ${avatarHTML(entry)}
       <div class="img-msg-bubble" style="${bubbleStyleFor(entry)}">
@@ -651,6 +654,7 @@ function renderEntry(i, entry) {
           <span class="img-time">${entry.time || ""}</span>
         </div>
       </div>`;
+    row.querySelector(".img-wrap img").addEventListener("click", () => openImageLightbox(poster));
     chatbody().insertBefore(row, document.getElementById("reveal-spacer"));
     return;
   }
@@ -1071,6 +1075,8 @@ function updateScrollHint() {
     !storyFinished &&
     !revealing &&
     !arPaused &&
+    !scrubbing &&
+    !lightboxOpen &&
     !replyKeyboardOpen &&
     revealIdx < MESSAGES.length &&
     el.scrollHeight > el.clientHeight + 4 &&
@@ -1093,7 +1099,7 @@ async function revealPlainEntry(idx, entry, inIntro) {
 }
 
 async function revealNext() {
-  if (revealing || arPaused || storyFinished) return;
+  if (revealing || arPaused || storyFinished || scrubbing || lightboxOpen) return;
 
   if (revealIdx >= MESSAGES.length) {
     storyFinished = true;
@@ -1160,7 +1166,7 @@ function fillViewport() {
   // DOM nodes ahead of the real (correctly personalized) reveal that
   // startExperience() kicks off once the visitor actually starts.
   if (!introOverlay.classList.contains("hidden")) return;
-  if (revealing || arPaused || storyFinished) return;
+  if (revealing || arPaused || storyFinished || scrubbing || lightboxOpen) return;
   // Once the last entry has been revealed, let this call through to
   // revealNext() unconditionally — that's what actually runs the
   // pause/fade/reset-to-intro sequence, and it shouldn't need a further
@@ -1208,6 +1214,192 @@ function onChatScroll() {
 }
 chatbody().addEventListener("scroll", onChatScroll);
 window.addEventListener("resize", () => fillViewport());
+
+/* ---------- chat: scroll-scrub sync ----------
+   The reveal system above only ever moves forward (revealIdx never
+   decreases), so scrolling back up through already-revealed history just
+   lets a visitor re-read it, nothing re-syncs the 3D model to match. This
+   listener adds that: scrolling away from the live bottom edge pauses
+   revealing (scrubbing joins arPaused/storyFinished in the guards above)
+   and syncs the viewer to whichever stage's image message is currently in
+   view, using each stage-transition row's data-stage-marker (set in
+   renderEntry). Scrolling back to the bottom snaps the viewer back to the
+   true live stage and lets fillViewport resume normal revealing. */
+let scrollSyncQueued = false;
+
+// Of all stage markers scrolled to/past the vertical middle of the chat
+// panel, the last one (highest stage) is the "current" stage for that
+// scroll position, markers are in ascending DOM/stage order, so the loop
+// can stop at the first marker that hasn't been reached yet.
+function stageForScrollPosition(el) {
+  const markers = el.querySelectorAll("[data-stage-marker]");
+  const referenceY = el.getBoundingClientRect().top + el.clientHeight / 2;
+  let target = 0;
+  for (const marker of markers) {
+    if (marker.getBoundingClientRect().top <= referenceY) {
+      target = Number(marker.dataset.stageMarker);
+    } else {
+      break;
+    }
+  }
+  return target;
+}
+
+function syncStageToScrollPosition() {
+  const target = stageForScrollPosition(chatbody());
+  if (target !== scrubStage) {
+    scrubStage = target;
+    showStageInViewer(target);
+  }
+}
+
+chatbody().addEventListener(
+  "scroll",
+  () => {
+    const el = chatbody();
+    if (isNearBottom(el)) {
+      if (scrubbing) {
+        scrubbing = false;
+        scrubStage = -1;
+        showStageInViewer(currentStage); // snap back to the live stage
+        updateScrollHint();
+        fillViewport();
+      }
+      return;
+    }
+
+    if (!scrubbing) {
+      scrubbing = true;
+      updateScrollHint();
+    }
+
+    if (scrollSyncQueued) return;
+    scrollSyncQueued = true;
+    requestAnimationFrame(() => {
+      scrollSyncQueued = false;
+      syncStageToScrollPosition();
+    });
+  },
+  { passive: true }
+);
+
+/* ---------- chat: tap-to-enlarge shared images ----------
+   Opens inside the phone screen (the lightbox is a child of .screen, which
+   clips overflow) rather than covering the whole page. Pauses revealing the
+   same way AR/scroll-scrub do, so new messages don't appear underneath
+   while a visitor is looking at the photo. Pinch (two touches) or a
+   double-tap/double-click zooms further into the enlarged image itself;
+   dragging while zoomed in pans around it. */
+const imageLightbox = document.getElementById("imageLightbox");
+const imageLightboxImg = document.getElementById("imageLightboxImg");
+
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 4;
+const ZOOM_DOUBLE_TAP = 2.5;
+const zoomState = { scale: 1, x: 0, y: 0 };
+
+function applyZoomTransform() {
+  imageLightboxImg.style.transform = `translate(${zoomState.x}px, ${zoomState.y}px) scale(${zoomState.scale})`;
+}
+
+function resetZoom() {
+  zoomState.scale = 1;
+  zoomState.x = 0;
+  zoomState.y = 0;
+  applyZoomTransform();
+}
+
+function openImageLightbox(src) {
+  imageLightboxImg.src = src;
+  resetZoom();
+  imageLightbox.classList.remove("hidden");
+  requestAnimationFrame(() => imageLightbox.classList.add("show"));
+  lightboxOpen = true;
+  updateScrollHint();
+}
+
+function closeImageLightbox() {
+  if (!lightboxOpen) return;
+  imageLightbox.classList.remove("show");
+  lightboxOpen = false;
+  setTimeout(() => imageLightbox.classList.add("hidden"), 200);
+  updateScrollHint();
+  fillViewport();
+}
+
+imageLightbox.addEventListener("click", (event) => {
+  if (event.target === imageLightbox || event.target.id === "imageLightboxClose") closeImageLightbox();
+});
+
+// Tracks active pointers by id so pinch works from two simultaneous
+// touches, Pointer Events fire per finger, not as a single gesture.
+const activeLightboxPointers = new Map();
+let pinchStartDist = 0;
+let pinchStartScale = 1;
+let panStart = null;
+let lastTapAt = 0;
+
+function lightboxPointerDistance() {
+  const pts = [...activeLightboxPointers.values()];
+  return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+}
+
+imageLightboxImg.addEventListener("pointerdown", (event) => {
+  imageLightboxImg.setPointerCapture(event.pointerId);
+  activeLightboxPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+  if (activeLightboxPointers.size === 2) {
+    pinchStartDist = lightboxPointerDistance();
+    pinchStartScale = zoomState.scale;
+    panStart = null;
+    return;
+  }
+
+  const now = Date.now();
+  if (now - lastTapAt < 300) {
+    lastTapAt = 0;
+    const rect = imageLightboxImg.getBoundingClientRect();
+    const tapX = event.clientX - rect.left - rect.width / 2;
+    const tapY = event.clientY - rect.top - rect.height / 2;
+    if (zoomState.scale > 1) {
+      resetZoom();
+    } else {
+      zoomState.scale = ZOOM_DOUBLE_TAP;
+      zoomState.x = -tapX * (ZOOM_DOUBLE_TAP - 1);
+      zoomState.y = -tapY * (ZOOM_DOUBLE_TAP - 1);
+      applyZoomTransform();
+    }
+  } else {
+    lastTapAt = now;
+    if (zoomState.scale > 1) {
+      panStart = { x: event.clientX, y: event.clientY, originX: zoomState.x, originY: zoomState.y };
+    }
+  }
+});
+
+imageLightboxImg.addEventListener("pointermove", (event) => {
+  if (!activeLightboxPointers.has(event.pointerId)) return;
+  activeLightboxPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+  if (activeLightboxPointers.size === 2) {
+    const dist = lightboxPointerDistance();
+    zoomState.scale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, pinchStartScale * (dist / pinchStartDist)));
+    applyZoomTransform();
+  } else if (panStart) {
+    zoomState.x = panStart.originX + (event.clientX - panStart.x);
+    zoomState.y = panStart.originY + (event.clientY - panStart.y);
+    applyZoomTransform();
+  }
+});
+
+function endLightboxPointer(event) {
+  activeLightboxPointers.delete(event.pointerId);
+  if (activeLightboxPointers.size < 2) pinchStartDist = 0;
+  if (activeLightboxPointers.size === 0) panStart = null;
+  if (zoomState.scale <= 1.02) resetZoom();
+}
+imageLightboxImg.addEventListener("pointerup", endLightboxPointer);
+imageLightboxImg.addEventListener("pointercancel", endLightboxPointer);
 
 /* ---------- init ---------- */
 
