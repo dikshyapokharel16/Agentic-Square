@@ -74,10 +74,56 @@ don't need to do anything extra.
 Unlike `.glb` (Draco + meshoptimizer), there's no mesh-compression tool in
 this pipeline for USD — file size scales directly with polygon count. Heavy
 raw exports (stage-01..03: 73MB+ of raw mesh alone) stay heavy after this
-script (~80MB) since only textures/scale get fixed, not geometry. If a model
-needs to be smaller, decimate it in Blender (Decimate modifier, ~0.3-0.5
-ratio) *before* exporting to `.usdz` — reducing polygon count at the source
-is the only reliable fix right now.
+script since only textures/scale get fixed, not geometry. If a model needs
+to be smaller and `dedupe-usdz-mesh.py` below doesn't apply (no repeated
+objects), decimate it in Blender (Decimate modifier, ~0.3-0.5 ratio) *before*
+exporting to `.usdz` — reducing polygon count at the source is the only
+remaining fix.
+
+## `.usdz` mesh deduplication (repeated objects)
+
+SketchUp/Blender exports for this project don't preserve component/instance
+reuse — every copy of a repeated object (a pallet, a brick in a wall) is
+exported as its own fully-baked, independent copy of the geometry, at up to
+20-30x the vertex count actually needed. `fix-usdz-scale.py` doesn't touch
+this (see limitation above), but it's fixable separately:
+
+```
+python dedupe-usdz-mesh.py ../models/stage-NN/model.usdz ../models/stage-NN/model.usdz
+```
+
+USD's crate (`.usdc`) format automatically stores only one copy of any array
+value that's byte-identical to one already in the file — but "the same
+object placed somewhere else" isn't byte-identical, because the raw export
+bakes each instance's world position directly into its `points` array (no
+shared local-space mesh + transform). This script finds mesh prims that are
+the same shape (points, translation-normalized to a common origin, plus
+matching face topology and normals, within a small tolerance) and rewrites
+each instance to share one prototype's `points`/`normals`/`primvars:st`
+arrays, moved into place with a `xformOp:translate` instead of baked-in
+coordinates. That makes the arrays byte-identical across instances, which is
+what lets USD's own dedup collapse them — this script does not do the
+byte-level compaction itself, it just makes the existing mechanism able to
+see the duplication.
+
+**Important: use `Export()`, not `Save()`, to write the result.** `Save()`
+only patches the fields that changed and leaves prior value storage alone —
+even if two attributes are now byte-identical, they stay stored twice.
+`Export()` forces a full rewrite of the crate file, which is what actually
+performs the dedup. (Confirmed experimentally: editing an existing layer in
+place and calling `Save()` gave 0% size reduction on a synthetic test where
+`Export()` gave ~150x.) This script uses `Export()` internally — if you're
+scripting further edits on top of it, keep that in mind.
+
+On stage-02 (the first model this was needed for): 4464 mesh prims, of which
+~1400 across 123 groups turned out to be exact-shape duplicates (mostly
+wooden pallets and repeated brick coursing) — 78MB raw mesh down to ~25MB,
+no visible difference. A handful of near-matches (e.g. mirrored instances,
+where normals come out ~180° off instead of matching to noise-level
+tolerance) are detected and left untouched rather than merged. The script
+prints how many groups were shared and how many prims were rejected as
+not-actually-duplicates; verify with `inspect-usdz.py` afterwards (scale/size
+should be unchanged) same as any other edit in this pipeline.
 
 ## Ambient occlusion
 
