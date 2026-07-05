@@ -1138,7 +1138,21 @@ async function revealNext() {
     revealIdx = idx;
     if (entry.anchorIndex != null) {
       const anchorRow = findRowByIndex(entry.anchorIndex);
-      if (anchorRow) anchorRow.scrollIntoView({ block: "center" });
+      // Deliberately not anchorRow.scrollIntoView() — that walks every
+      // scrollable ancestor, and .screen has permanent hidden overflow from
+      // #replyKeyboard sitting translateY(100%) below its own bounds (always
+      // there, even closed), so the browser sometimes "helps" by scrolling
+      // .screen itself instead of just .chatbody — shifting the whole phone
+      // screen (statusbar included) up and leaving it stuck there. Centering
+      // the row within .chatbody's own scrollTop only avoids touching
+      // .screen at all.
+      if (anchorRow) {
+        const body = chatbody();
+        const bodyRect = body.getBoundingClientRect();
+        const rowRect = anchorRow.getBoundingClientRect();
+        const delta = (rowRect.top + rowRect.height / 2) - (bodyRect.top + bodyRect.height / 2);
+        body.scrollTop = Math.max(0, Math.min(body.scrollTop + delta, body.scrollHeight - body.clientHeight));
+      }
     }
     await handleLevelPopup(entry);
   } else {
