@@ -678,7 +678,7 @@ function renderEntry(i, entry) {
       ${avatarHTML(entry)}
       <div class="file-msg-bubble" style="${bubbleStyleFor(entry)}">
         <div class="name" style="color:${nameColorFor(entry)};">${displayName(entry)}</div>
-        <div class="file-card">
+        <div class="file-card${entry.previewImage ? " has-preview" : ""}">
           <div class="file-icon"><i class="ti ti-file-type-pdf"></i></div>
           <div class="file-meta">
             <div class="file-name">${entry.fileName || "document.pdf"}</div>
@@ -687,6 +687,13 @@ function renderEntry(i, entry) {
         </div>
         <span class="time">${entry.time || ""}</span>
       </div>`;
+    // Same tap-to-enlarge lightbox as shared chat images, keyed off an
+    // optional preview image instead of the PDF itself — visitors can't
+    // open a real PDF on the kiosk, but a rendered preview gives them
+    // something to actually look at.
+    if (entry.previewImage) {
+      row.querySelector(".file-card").addEventListener("click", () => openImageLightbox(entry.previewImage));
+    }
     chatbody().insertBefore(row, document.getElementById("reveal-spacer"));
     return;
   }

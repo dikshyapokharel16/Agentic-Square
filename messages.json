@@ -768,7 +768,8 @@
     "bg": "#BF5468",
     "fg": "#fbe7ea",
     "fileName": "WESTHAGENPLAYS!_BUILD_MANUAL.pdf",
-    "fileSub": "PDF document"
+    "fileSub": "PDF document",
+    "previewImage": "documents/build-manual-preview.webp"
   },
   {
     "type": "level",
