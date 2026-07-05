@@ -279,7 +279,7 @@ function createViewer(stage) {
   viewer = document.createElement("model-viewer");
   viewer.setAttribute("src", withVersion(stage.glb));
   if (stage.usdz) viewer.setAttribute("ios-src", withVersion(stage.usdz));
-  if (stage.poster) viewer.setAttribute("poster", stage.poster);
+  if (stage.poster) viewer.setAttribute("poster", withVersion(stage.poster));
   viewer.setAttribute("alt", `${stage.name || "3D model"} — preview`);
   viewer.setAttribute("ar", "");
   viewer.setAttribute("ar-modes", "webxr scene-viewer quick-look");
@@ -377,7 +377,7 @@ function showStageInViewer(i) {
   viewer.src = withVersion(stage.glb);
   if (stage.usdz) viewer.setAttribute("ios-src", withVersion(stage.usdz));
   else viewer.removeAttribute("ios-src");
-  if (stage.poster) viewer.setAttribute("poster", stage.poster);
+  if (stage.poster) viewer.setAttribute("poster", withVersion(stage.poster));
 }
 
 // model-viewer centers the model within its own box — but that box spans
@@ -638,7 +638,7 @@ function renderEntry(i, entry) {
     currentStage++;
     applyStage(currentStage);
     const stage = stageAt(currentStage);
-    const poster = stage && stage.poster ? stage.poster : "";
+    const poster = stage && stage.poster ? withVersion(stage.poster) : "";
     const row = document.createElement("div");
     row.className = "row";
     row.dataset.msgIndex = i;
