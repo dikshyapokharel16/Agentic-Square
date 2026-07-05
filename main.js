@@ -908,6 +908,12 @@ function handleUserPrompt(entry) {
           settleWithReply(matchBucketReply(entry, text));
           return;
         }
+      } else if (entry.skipReply) {
+        // Skip (no text at all) still gets a Marktplatz follow-up if the
+        // entry defines one — distinct from fallbackReply, which only fires
+        // once the visitor has actually typed something that matched no bucket.
+        settleWithReply(entry.skipReply);
+        return;
       }
       resolve();
     }
