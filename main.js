@@ -834,9 +834,8 @@ function typingDuration(entry, inIntro) {
      - "keywords": free typing like "text", but the typed reply is also
        scanned against entry.buckets to pick which Marktplatz follow-up
        fits best (entry.fallbackReply if nothing matches).
-   Skip, an 8s timeout, or sending/tapping a reply all resolve the same way
-   so playback always continues. */
-const REPLY_TIMEOUT_MS = 8000;
+   The prompt stays open indefinitely — nothing times it out on its own.
+   Only an explicit tap on Skip, or sending/tapping a reply, resolves it. */
 const MAX_REPLY_LEN = 80;
 
 // Finds the first bucket whose keywords appear in the typed text
@@ -872,7 +871,6 @@ function handleUserPrompt(entry) {
     let replyText = "";
     let settled = false;
     let built = false;
-    const timeoutId = setTimeout(() => finish(""), REPLY_TIMEOUT_MS);
 
     // Renders Marktplatz's follow-up (if any) after a typing beat, then
     // resolves — shared by both the choice and keyword-bucket paths so the
@@ -899,7 +897,6 @@ function handleUserPrompt(entry) {
     function finish(text) {
       if (settled) return;
       settled = true;
-      clearTimeout(timeoutId);
       caption.classList.remove("show");
       replyKeyboard.classList.remove("show");
       caption.onclick = null;
@@ -918,7 +915,6 @@ function handleUserPrompt(entry) {
     function finishChoice(option) {
       if (settled) return;
       settled = true;
-      clearTimeout(timeoutId);
       caption.classList.remove("show");
       replyKeyboard.classList.remove("show");
       caption.onclick = null;
@@ -937,7 +933,6 @@ function handleUserPrompt(entry) {
     // The whole box is tappable, not just the text — a visitor's tap could
     // land anywhere on the caption bubble, not precisely on the sentence.
     caption.onclick = () => {
-      clearTimeout(timeoutId);
       caption.classList.remove("show");
       if (!built) {
         if (isChoice) {
