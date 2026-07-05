@@ -602,7 +602,11 @@
           "text": "Let's do that then. One idea from me — maybe also a bit of greenery for some shade, what do you all think?"
         }
       }
-    ]
+    ],
+    "skipReply": {
+      "role": "Designer",
+      "text": "That's a great idea! We could add some greenery too, for a bit of shade.☀️ I can build the whole thing out of pallets we've already got, so it barely touches the budget."
+    }
   },
   {
     "type": "msg",
