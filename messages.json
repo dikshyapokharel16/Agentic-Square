@@ -5,7 +5,6 @@
     "time": "08:00",
     "title": "The idea",
     "text": "A design or event idea can be raised by residents themselves (reactive) — or the AI can propose one on its own (active). Once a majority votes yes, planning begins.",
-    "autoReveal": 4,
     "anchorIndex": 4
   },
   {
@@ -99,7 +98,6 @@
     "time": "09:19",
     "title": "Planning",
     "text": "During planning, neighbours share and discuss what they want. Step by step, the AI translates their wishes into a concrete spatial design.",
-    "autoReveal": 2,
     "anchorIndex": 9
   },
   {
@@ -355,7 +353,6 @@
     "time": "11:20",
     "title": "Conflict",
     "text": "When residents' needs collide, the AI steps in as a mediator. Helping to find a solution that works for everyone, not just the loudest voice.",
-    "autoReveal": 4,
     "anchorIndex": 28
   },
   {
@@ -733,7 +730,6 @@
     "time": "10:41",
     "title": "Agreement",
     "text": "Once the neighbourhood agrees on a design, the AI turns it into a printable site plan and a step-by-step building manual.",
-    "autoReveal": 1,
     "anchorIndex": 48
   },
   {
@@ -780,7 +776,6 @@
     "time": "10:45",
     "title": "Approval",
     "text": "Before anything can actually be built, the city has to approve the design. The AI takes over communication with the relevant authorities.",
-    "autoReveal": 1,
     "anchorIndex": 52
   },
   {
@@ -805,7 +800,6 @@
     "time": "10:47",
     "title": "Build day",
     "text": "Once the city has said yes, the AI helps organise the build itself: defining tasks, assigning helpers, and setting a date.",
-    "autoReveal": 4,
     "anchorIndex": 57
   },
   {

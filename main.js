@@ -15,6 +15,7 @@ let scrubbing = false; // scrolled away from the live bottom, previewing an earl
 let scrubStage = -1; // stage currently previewed while scrubbing, -1 when not scrubbing
 let lightboxOpen = false; // an enlarged chat image is showing
 let firstImageIdx = -1; // computed once MESSAGES loads — see init
+let pendingLevelEntry = null; // a level marker passed through, waiting for its anchor message to reveal
 
 async function loadJSON(path) {
   const response = await fetch(path);
@@ -250,6 +251,7 @@ function startExperience(name) {
   scrubbing = false;
   scrubStage = -1;
   lightboxOpen = false;
+  pendingLevelEntry = null;
   // Defensive: normally already empty (the end-of-story reset clears it),
   // but guarantees a clean slate regardless of how chatbody got into
   // whatever state it was in before this particular start.
@@ -264,6 +266,7 @@ function resetToIntro() {
   scrubbing = false;
   scrubStage = -1;
   lightboxOpen = false;
+  pendingLevelEntry = null;
   POLL_STATE = {};
   activePollIndex = null;
   currentStage = 0;
@@ -1020,6 +1023,19 @@ function isNearBottom(el) {
   return el.scrollHeight - el.scrollTop - el.clientHeight < 64;
 }
 
+// A visitor who has just read the latest message and stopped scrolling
+// naturally lands within a few dozen px of the true bottom — well short of
+// the invisible #reveal-spacer's full 220px — so isNearBottom's tight 64px
+// threshold sat right on the edge of that resting point (measured as low as
+// 65px in practice) and could tip either way depending on message length,
+// making the scroll-scrub listener below flag a visitor as "scrubbing away
+// from live" and pause further reveals even though they hadn't scrolled
+// backward at all. This threshold is deliberately much more generous, purely
+// to tell "actually scrolled back into history" apart from "just caught up".
+function isFarFromLive(el) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight > 200;
+}
+
 // .chatbody needs *some* extra scrollable room whenever story content
 // remains, or once revealed content happens to fit (or fall short of) the
 // container there's no scrollbar at all and the scroll listener that
@@ -1086,9 +1102,8 @@ function updateScrollHint() {
 }
 
 // Plays the typing beat (or the short date/system/event pause) and renders
-// one entry — the "plain", non-blocking reveal step shared by the normal
-// sequential loop below and the level auto-reveal batch, which needs the
-// exact same per-entry treatment while it runs ahead of the scroll gate.
+// one entry — the single per-entry reveal step used by the normal
+// sequential loop below.
 async function revealPlainEntry(idx, entry, inIntro) {
   if (entry.type === "date" || entry.type === "system" || entry.type === "event") {
     renderEntry(idx, entry);
@@ -1119,48 +1134,42 @@ async function revealNext() {
 
   revealing = true;
   const entry = MESSAGES[revealIdx];
+
+  // Level markers carry no visible row of their own, so passing over one
+  // costs the visitor no extra scroll — remember it and keep going
+  // immediately. Its card only shows once its anchorIndex is actually
+  // reached below, through the exact same one-at-a-time, scroll-gated
+  // flow as everything else, so it never jumps several messages ahead of
+  // where the visitor has actually scrolled to, and needs no re-centering
+  // scroll of its own — the anchor row is already on-screen right where it
+  // just rendered.
+  if (entry.type === "level") {
+    pendingLevelEntry = entry;
+    revealIdx++;
+    revealing = false;
+    ensureScrollable();
+    updateScrollHint();
+    requestAnimationFrame(fillViewport);
+    return;
+  }
+
   const inIntro = firstImageIdx === -1 || revealIdx < firstImageIdx;
 
   if (entry.type === "userPrompt") {
     await handleUserPrompt(entry);
-  } else if (entry.type === "level") {
-    // entry.autoReveal lets a handful of entries play out first (typing
-    // beats and all, normal chat — no popup visible yet), so the level
-    // card only pops up once its anchor message has actually appeared,
-    // already sitting right next to it — not before, and not needing a
-    // reposition partway through once the anchor shows up.
-    let idx = revealIdx;
-    const autoCount = entry.autoReveal || 0;
-    for (let n = 0; n < autoCount && idx + 1 < MESSAGES.length; n++) {
-      idx++;
-      await revealPlainEntry(idx, MESSAGES[idx], firstImageIdx === -1 || idx < firstImageIdx);
-      ensureScrollable();
-    }
-    revealIdx = idx;
-    if (entry.anchorIndex != null) {
-      const anchorRow = findRowByIndex(entry.anchorIndex);
-      // Deliberately not anchorRow.scrollIntoView() — that walks every
-      // scrollable ancestor, and .screen has permanent hidden overflow from
-      // #replyKeyboard sitting translateY(100%) below its own bounds (always
-      // there, even closed), so the browser sometimes "helps" by scrolling
-      // .screen itself instead of just .chatbody — shifting the whole phone
-      // screen (statusbar included) up and leaving it stuck there. Centering
-      // the row within .chatbody's own scrollTop only avoids touching
-      // .screen at all.
-      if (anchorRow) {
-        const body = chatbody();
-        const bodyRect = body.getBoundingClientRect();
-        const rowRect = anchorRow.getBoundingClientRect();
-        const delta = (rowRect.top + rowRect.height / 2) - (bodyRect.top + bodyRect.height / 2);
-        body.scrollTop = Math.max(0, Math.min(body.scrollTop + delta, body.scrollHeight - body.clientHeight));
-      }
-    }
-    await handleLevelPopup(entry);
   } else {
     await revealPlainEntry(revealIdx, entry, inIntro);
   }
 
+  const revealedIdx = revealIdx;
   revealIdx++;
+
+  if (pendingLevelEntry && pendingLevelEntry.anchorIndex === revealedIdx) {
+    const levelEntry = pendingLevelEntry;
+    pendingLevelEntry = null;
+    await handleLevelPopup(levelEntry);
+  }
+
   revealing = false;
   ensureScrollable();
   updateScrollHint();
@@ -1272,7 +1281,7 @@ chatbody().addEventListener(
   "scroll",
   () => {
     const el = chatbody();
-    if (isNearBottom(el)) {
+    if (!isFarFromLive(el)) {
       if (scrubbing) {
         scrubbing = false;
         scrubStage = -1;
