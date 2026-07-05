@@ -419,7 +419,15 @@ function positionArCaption() {
   caption.style.bottom = `${Math.max(24, window.innerHeight - phoneRect.bottom + 64)}px`;
 }
 
-window.addEventListener("resize", positionArCaption);
+// Set while a level pop-up is showing (see handleLevelPopup) so a resize
+// mid-display repositions it against its own anchor row instead of falling
+// back to the reply-prompt's fixed spot.
+let activeLevelAnchorRow = null;
+
+window.addEventListener("resize", () => {
+  if (activeLevelAnchorRow) positionLevelCaption(activeLevelAnchorRow);
+  else positionArCaption();
+});
 positionArCaption();
 
 // Every rendered chat row is tagged with its MESSAGES array index (see
@@ -995,16 +1003,36 @@ function handleLevelPopup(entry) {
     const captionLevelNum = document.getElementById("arCaptionLevelNum");
     const captionLevelTitle = document.getElementById("arCaptionLevelTitle");
 
+    const anchorRow = entry.anchorIndex != null ? findRowByIndex(entry.anchorIndex) : null;
+
     updatePhoneClock(entry);
     caption.classList.add("level-mode");
     captionLevelNum.textContent = `Level ${entry.level}`;
     captionLevelTitle.textContent = entry.title;
     captionText.textContent = entry.text;
-    positionLevelCaption(entry.anchorIndex != null ? findRowByIndex(entry.anchorIndex) : null);
+    positionLevelCaption(anchorRow);
     caption.classList.add("show");
+
+    // Dismissal is tap-only, so the visitor can still scroll the chat
+    // underneath the card while it's showing — keep it pinned level with
+    // its anchor row as that happens, instead of leaving it stranded at
+    // the height the row happened to be at the moment the card appeared.
+    activeLevelAnchorRow = anchorRow;
+    let repositionQueued = false;
+    const reposition = () => {
+      if (repositionQueued) return;
+      repositionQueued = true;
+      requestAnimationFrame(() => {
+        repositionQueued = false;
+        positionLevelCaption(anchorRow);
+      });
+    };
+    if (anchorRow) chatbody().addEventListener("scroll", reposition, { passive: true });
 
     caption.onclick = () => {
       caption.onclick = null;
+      if (anchorRow) chatbody().removeEventListener("scroll", reposition);
+      activeLevelAnchorRow = null;
       caption.classList.remove("show", "level-mode");
       resolve();
     };
