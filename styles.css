@@ -255,17 +255,13 @@ model-viewer {
   font-size: 12px;
 }
 
-.waheader .avatar.av-loci {
-  background: radial-gradient(circle at 50% 50%,
-    rgba(255,236,240,.95) 0%,
-    rgba(223,140,157,.85) 22%,
-    rgba(191,84,104,.55) 45%,
-    rgba(191,84,104,.15) 70%,
-    rgba(191,84,104,0) 100%);
-  box-shadow:
-    0 0 6px 2px rgba(191,84,104,.45),
-    0 0 12px 5px rgba(191,84,104,.25),
-    0 0 18px 8px rgba(191,84,104,.12);
+.waheader .avatar.av-icon {
+  background: #2C2C2A;
+}
+
+.waheader .avatar.av-icon i {
+  font-size: 1.5em;
+  color: #fff;
 }
 
 .bubble {

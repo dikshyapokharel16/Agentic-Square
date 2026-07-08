@@ -757,7 +757,8 @@
     "bg": "#BF5468",
     "fg": "#fbe7ea",
     "fileName": "WESTHAGENPLAYS!_MASTERPLAN.pdf",
-    "fileSub": "PDF document"
+    "fileSub": "PDF document",
+    "previewImage": "documents/masterplan-preview.webp"
   },
   {
     "type": "file",
