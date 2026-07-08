@@ -496,15 +496,19 @@ function preloadStage(i) {
   fetch(withVersion(stage.glb)).catch(() => {});
 }
 
-// Warm the cache for the *current* stage's simpler arGlb too, so tapping
-// "View AR" (which swaps to it, see createViewer's button handler) doesn't
-// stall on a cold fetch before AR can launch.
+// Warm the cache for the *current* stage's AR files too, so tapping
+// "View AR" doesn't stall on a cold fetch before AR can launch. Both
+// formats, not just arGlb — iOS Quick Look reads arUsdz directly (never
+// arGlb/`src`, see the AR button handler in createViewer), so without this
+// a visitor's first AR tap on iOS still hit a cold multi-MB fetch despite
+// the arGlb-only preload here doing nothing for that platform at all.
 const preloadedArStages = new Set();
 function preloadArGlb(i) {
   const stage = stageAt(i);
-  if (!stage || !stage.arGlb || preloadedArStages.has(i)) return;
+  if (!stage || preloadedArStages.has(i)) return;
   preloadedArStages.add(i);
-  fetch(withVersion(stage.arGlb)).catch(() => {});
+  if (stage.arGlb) fetch(withVersion(stage.arGlb)).catch(() => {});
+  if (stage.arUsdz) fetch(withVersion(stage.arUsdz)).catch(() => {});
 }
 
 function applyStage(i) {
