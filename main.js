@@ -129,9 +129,25 @@ const scanQrBtn = document.getElementById("scanQrBtn");
    the intro screen — see the finish sequence in revealNext(). */
 const furnitureGallery = document.getElementById("furnitureGallery");
 const furnitureDoneBtn = document.getElementById("furnitureDoneBtn");
-const furnitureArViewer = document.getElementById("furnitureArViewer");
+const furnitureArViewers = document.getElementById("furnitureArViewers");
 const FURNITURE_IDLE_TIMEOUT_MS = 45000;
 let furnitureIdleTimer = null;
+
+// One hidden <model-viewer> per piece, src/ios-src set here (once FURNITURE
+// loads) rather than at click time — see the comment on #furnitureArViewers
+// in index.html for why that avoids a same-tap race that needed two taps.
+function buildFurnitureArViewers() {
+  furnitureArViewers.innerHTML = "";
+  FURNITURE.forEach((item) => {
+    const el = document.createElement("model-viewer");
+    el.className = "furniture-ar-viewer";
+    el.setAttribute("ar", "");
+    el.setAttribute("ar-modes", "webxr scene-viewer quick-look");
+    if (item.arGlb) el.setAttribute("src", withVersion(item.arGlb));
+    if (item.arUsdz) el.setAttribute("ios-src", withVersion(item.arUsdz));
+    furnitureArViewers.appendChild(el);
+  });
+}
 
 /* ---------- intro: parallax background ----------
    Mouse for desktop/browser preview; finger position for touchscreens (drag
@@ -312,15 +328,15 @@ function resetToIntro() {
   showIntro();
 }
 
-// Sets src/ios-src on the dedicated (never-shown) furniture AR viewer and
-// fires activateAR() immediately, same as the square model's own AR button —
-// Quick Look (iOS) reads ios-src directly and Scene Viewer/WebXR (Android)
-// only needs the URL string, so there's nothing to gain by waiting on a
-// "load" event first.
-function activateFurnitureAR(item) {
-  if (item.arGlb) furnitureArViewer.setAttribute("src", withVersion(item.arGlb));
-  if (item.arUsdz) furnitureArViewer.setAttribute("ios-src", withVersion(item.arUsdz));
-  furnitureArViewer.activateAR();
+// The matching hidden viewer (see buildFurnitureArViewers) already has its
+// src/ios-src set from page load, not from this click — so this only ever
+// calls activateAR(), never touches attributes here. Setting src/ios-src
+// and calling activateAR() in the same tap used to need a second tap
+// before it would actually launch anything (model-viewer's internal
+// AR-readiness state hadn't caught up to the same-tick attribute change).
+function activateFurnitureAR(idx) {
+  const el = furnitureArViewers.children[idx];
+  if (el) el.activateAR();
 }
 
 // Restarts the "nobody's touched this screen in a while" timer — called on
@@ -347,10 +363,7 @@ function hideFurnitureGallery() {
 furnitureDoneBtn.addEventListener("click", hideFurnitureGallery);
 furnitureGallery.addEventListener("pointerdown", resetFurnitureIdleTimer);
 document.querySelectorAll(".furniture-ar-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const item = FURNITURE[Number(btn.dataset.idx)];
-    if (item) activateFurnitureAR(item);
-  });
+  btn.addEventListener("click", () => activateFurnitureAR(Number(btn.dataset.idx)));
 });
 
 /* ---------- AR panel ---------- */
@@ -1683,6 +1696,7 @@ Promise.all([loadJSON("stages.json"), loadJSON("messages.json"), loadJSON("furni
     RAW_MESSAGES = messages;
     MESSAGES = messages;
     FURNITURE = furniture;
+    buildFurnitureArViewers();
     firstImageIdx = MESSAGES.findIndex((m) => m.type === "image");
     // A separate QR code (e.g. a standalone sign near the furniture, not
     // part of the kiosk's own chat flow) can link straight to ?furniture=1

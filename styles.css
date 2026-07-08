@@ -718,7 +718,7 @@ model-viewer {
   cursor: pointer;
 }
 
-#furnitureArViewer {
+.furniture-ar-viewer {
   position: absolute;
   width: 10px;
   height: 10px;
