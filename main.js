@@ -17,6 +17,7 @@ let scrubbing = false; // scrolled away from the live bottom, previewing an earl
 let scrubStage = -1; // stage currently previewed while scrubbing, -1 when not scrubbing
 let lightboxOpen = false; // an enlarged chat image is showing
 let firstImageIdx = -1; // computed once MESSAGES loads — see init
+let LEVEL_ANCHORS = []; // anchorIndex of each type:"level" entry, in script order — computed once MESSAGES loads, see init
 
 // Tuned by hand in-browser against the website display model (stage.glb).
 // The AR-only model (stage.arGlb) is scaled for real-world AR placement
@@ -324,6 +325,8 @@ function startExperience(name) {
   // whatever state it was in before this particular start.
   chatbody().innerHTML = "";
   ensureScrollable();
+  document.getElementById("storyProgress").classList.add("show");
+  updateStoryProgress();
   fillViewport();
 }
 
@@ -337,6 +340,8 @@ function resetToIntro() {
   POLL_STATE = {};
   activePollIndex = null;
   currentStage = 0;
+  document.getElementById("storyProgress").classList.remove("show");
+  updateStoryProgress();
   showIntro();
 }
 
@@ -635,6 +640,79 @@ function centerViewerAroundVisibleArea() {
 }
 
 window.addEventListener("resize", centerViewerAroundVisibleArea);
+
+// Centered over the AR area's actual visible width — the space left of the
+// floating phone panel, not the full split-screen width — same "visible
+// area" reasoning as centerViewerAroundVisibleArea above, at 2/3 of it.
+function positionStoryProgress() {
+  const bar = document.getElementById("storyProgress");
+  const phone = document.querySelector(".phone-wrap");
+  if (!bar || !phone) return;
+  const visibleWidth = phone.getBoundingClientRect().left;
+  const barWidth = (visibleWidth * 2) / 3;
+  bar.style.left = `${visibleWidth / 2}px`;
+  bar.style.width = `${barWidth}px`;
+}
+
+window.addEventListener("resize", positionStoryProgress);
+positionStoryProgress();
+
+// Continuous fill between the 6 level circles. Defaults to revealIdx (how
+// far the story has actually progressed), but a scrubbing visitor scrolled
+// back through history sees the bar preview that earlier point instead —
+// see syncStoryProgressToScrollPosition — the same "preview without
+// disturbing where forward revealing resumes from" split already used for
+// the 3D model (showStageInViewer vs. applyStage). A level's anchor row
+// counts as reached once idx > that level's anchorIndex — see the
+// pendingLevelEntry handoff in revealNext, where revealIdx is already
+// incremented past the anchor by the time its card is shown.
+function updateStoryProgress(idx) {
+  const targetIdx = idx != null ? idx : revealIdx;
+  const fill = document.getElementById("storyProgressFill");
+  const steps = document.querySelectorAll(".story-progress-step");
+  if (!fill || !steps.length || !LEVEL_ANCHORS.length) return;
+
+  const segments = LEVEL_ANCHORS.length - 1;
+  const lastAnchor = LEVEL_ANCHORS[LEVEL_ANCHORS.length - 1];
+  let percent = 0;
+  if (targetIdx > lastAnchor) {
+    percent = 100;
+  } else if (targetIdx > LEVEL_ANCHORS[0]) {
+    for (let i = 0; i < segments; i++) {
+      const start = LEVEL_ANCHORS[i];
+      const end = LEVEL_ANCHORS[i + 1];
+      if (targetIdx <= end) {
+        percent = ((i + (targetIdx - start) / (end - start)) / segments) * 100;
+        break;
+      }
+    }
+  }
+  fill.style.width = `${percent}%`;
+
+  steps.forEach((step, i) => {
+    const reached = targetIdx > LEVEL_ANCHORS[i];
+    const nextReached = LEVEL_ANCHORS[i + 1] != null && targetIdx > LEVEL_ANCHORS[i + 1];
+    step.classList.toggle("complete", reached && nextReached);
+    step.classList.toggle("current", reached && !nextReached);
+  });
+}
+
+// Mirrors stageForScrollPosition (same [data-*] + vertical-middle-of-chat
+// technique) but for message index rather than stage, so the progress bar
+// can preview whichever chapter a scrubbing visitor has scrolled back to.
+function messageIndexForScrollPosition(el) {
+  const markers = el.querySelectorAll("[data-msg-index]");
+  const referenceY = el.getBoundingClientRect().top + el.clientHeight / 2;
+  let target = 0;
+  for (const marker of markers) {
+    if (marker.getBoundingClientRect().top <= referenceY) {
+      target = Number(marker.dataset.msgIndex);
+    } else {
+      break;
+    }
+  }
+  return target;
+}
 
 // The nudge caption should read as bridging the AR scene and the phone —
 // its right edge tucked under the phone's left edge — rather than sitting
@@ -1433,6 +1511,7 @@ async function revealNext() {
     revealing = false;
     ensureScrollable();
     updateScrollHint();
+    updateStoryProgress();
     requestAnimationFrame(fillViewport);
     return;
   }
@@ -1457,6 +1536,7 @@ async function revealNext() {
   revealing = false;
   ensureScrollable();
   updateScrollHint();
+  updateStoryProgress();
   requestAnimationFrame(fillViewport);
 }
 
@@ -1559,6 +1639,7 @@ function syncStageToScrollPosition() {
     scrubStage = target;
     showStageInViewer(target);
   }
+  updateStoryProgress(messageIndexForScrollPosition(chatbody()));
 }
 
 chatbody().addEventListener(
@@ -1571,6 +1652,7 @@ chatbody().addEventListener(
         scrubStage = -1;
         showStageInViewer(currentStage); // snap back to the live stage
         updateScrollHint();
+        updateStoryProgress(); // snap the progress bar back too, live revealIdx
         fillViewport();
       }
       return;
@@ -1719,6 +1801,7 @@ Promise.all([loadJSON("stages.json"), loadJSON("messages.json"), loadJSON("furni
     FURNITURE = furniture;
     buildFurnitureArViewers();
     firstImageIdx = MESSAGES.findIndex((m) => m.type === "image");
+    LEVEL_ANCHORS = MESSAGES.filter((m) => m.type === "level").map((m) => m.anchorIndex);
     // A separate QR code (e.g. a standalone sign near the furniture, not
     // part of the kiosk's own chat flow) can link straight to ?furniture=1
     // to land directly on the AR gallery, skipping the name-entry/chat

@@ -59,6 +59,23 @@
       <div id="viewer-root">
         <p id="loading-message">Loading model…</p>
       </div>
+      <!-- Story chapter progress (1-6, matching the type:"level" cards) —
+           only shown once the chat story is actually running (see
+           startExperience/resetToIntro), positioned in JS over the AR
+           area's visible (non-phone-occluded) width (positionStoryProgress). -->
+      <div class="story-progress" id="storyProgress">
+        <div class="story-progress-track">
+          <div class="story-progress-fill" id="storyProgressFill"></div>
+        </div>
+        <div class="story-progress-steps">
+          <div class="story-progress-step" data-level="1">1</div>
+          <div class="story-progress-step" data-level="2">2</div>
+          <div class="story-progress-step" data-level="3">3</div>
+          <div class="story-progress-step" data-level="4">4</div>
+          <div class="story-progress-step" data-level="5">5</div>
+          <div class="story-progress-step" data-level="6">6</div>
+        </div>
+      </div>
       <div class="ar-caption" id="arCaption">
         <div class="ar-caption-level" id="arCaptionLevel">
           <span class="ar-caption-level-num" id="arCaptionLevelNum"></span>

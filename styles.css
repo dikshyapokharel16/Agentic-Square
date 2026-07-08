@@ -966,6 +966,91 @@ model-viewer {
   background: #d8d8d8;
 }
 
+/* ---------- story chapter progress (over the AR area, see positionStoryProgress) ---------- */
+.story-progress {
+  /* Same vw-based clamp() scale already used for small phone-UI labels
+     (e.g. .waheader .title) — reused here so the bar scales with screen
+     size like the rest of the kiosk, since the final exhibition tablet
+     isn't chosen yet. Referenced below via calc() so the track/circles/
+     font all stay proportional to each other off one shared value. */
+  --step-size: clamp(22px, 2.2vw, 32px);
+  position: absolute;
+  /* left/top/width are set from JS (positionStoryProgress) so it can stay
+     centered on the AR area's actual visible width — the space left of the
+     floating phone panel, not the full split-screen width — same reasoning
+     as centerViewerAroundVisibleArea/positionArCaption above it. These are
+     just a sane fallback before that first measurement runs. */
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease;
+}
+
+.story-progress.show {
+  opacity: 1;
+}
+
+.story-progress-steps {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.story-progress-track {
+  position: absolute;
+  left: calc(var(--step-size) / 2);
+  right: calc(var(--step-size) / 2);
+  top: calc(var(--step-size) / 2);
+  height: clamp(2px, .25vw, 4px);
+  background: rgba(17, 17, 17, .15);
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.story-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: var(--accent-green);
+  border-radius: 2px;
+  transition: width .25s linear;
+}
+
+.story-progress-step {
+  width: var(--step-size);
+  height: var(--step-size);
+  border-radius: 50%;
+  background: #fff;
+  border: clamp(1.5px, .15vw, 2.5px) solid rgba(17, 17, 17, .18);
+  color: rgba(17, 17, 17, .4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(10px, 1vw, 14px);
+  font-weight: 700;
+  transition: background .25s ease, border-color .25s ease, color .25s ease;
+}
+
+.story-progress-step.current {
+  border-color: var(--accent-green);
+  color: var(--accent-green-dark);
+  background: #fff;
+}
+
+.story-progress-step.complete {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: #fff;
+}
+
 /* ---------- AR-panel caption bubble (nudge / skip / timeout) ---------- */
 .ar-caption {
   position: absolute;
