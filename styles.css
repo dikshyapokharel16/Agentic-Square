@@ -257,6 +257,7 @@ model-viewer {
 
 .waheader .avatar.av-icon {
   background: #008069;
+  border: 1px solid #fff;
 }
 
 .waheader .avatar.av-icon i {

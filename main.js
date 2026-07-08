@@ -1211,7 +1211,7 @@ function handleUserPrompt(entry) {
     // resolves — shared by both the choice and keyword-bucket paths so the
     // reply always appears as part of the same interaction, not gated
     // behind a further scroll.
-    async function settleWithReply(reply) {
+    async function settleWithReply(reply, { fast = false } = {}) {
       if (reply) {
         const replyEntry = {
           type: "msg",
@@ -1223,7 +1223,13 @@ function handleUserPrompt(entry) {
           fg: "#fbe7ea",
           initial: "L",
         };
-        await showTyping(replyEntry, pacedDuration(typingDuration(replyEntry, false)));
+        // Skip's follow-up (fast: true) still gets a brief typing beat for
+        // consistency, but not the full word-count-scaled duration used
+        // elsewhere — a visitor who just tapped Skip has already signaled
+        // they're not lingering, so waiting out a ~6s "typing" pause for a
+        // long skipReply sentence read as the app stalling, not thinking.
+        const duration = fast ? Math.min(pacedDuration(typingDuration(replyEntry, false)), 900) : pacedDuration(typingDuration(replyEntry, false));
+        await showTyping(replyEntry, duration);
         renderEntry(revealIdx, replyEntry);
       }
       resolve();
@@ -1247,7 +1253,7 @@ function handleUserPrompt(entry) {
         // Skip (no text at all) still gets a Marktplatz follow-up if the
         // entry defines one — distinct from fallbackReply, which only fires
         // once the visitor has actually typed something that matched no bucket.
-        settleWithReply(entry.skipReply);
+        settleWithReply(entry.skipReply, { fast: true });
         return;
       }
       resolve();
@@ -1337,6 +1343,11 @@ function handleLevelPopup(entry) {
     positionLevelCaption(anchorRow);
     caption.classList.add("show");
     vibrate(40);
+    // Jump the progress bar to this chapter the moment the card appears,
+    // not only once it's dismissed — revealIdx is already past this
+    // level's anchorIndex by now (incremented in revealNext before this
+    // popup is awaited), so the default (no-arg) call already reflects it.
+    updateStoryProgress();
 
     // Dismissal is tap-only, so the visitor can still scroll the chat
     // underneath the card while it's showing — keep it pinned level with
