@@ -1266,7 +1266,14 @@ function handleLevelPopup(entry) {
       caption.onclick = null;
       if (anchorRow) chatbody().removeEventListener("scroll", reposition);
       activeLevelAnchorRow = null;
-      caption.classList.remove("show", "level-mode");
+      // Only "show" — the box still fades out over .3s (see .ar-caption's
+      // transition), and dropping "level-mode" right away instantly swaps
+      // the still-visible box from its title layout to the reply-prompt's
+      // tap-to-reply/skip layout for that whole fade, flashing the same
+      // text without the level title. Whichever handler shows the caption
+      // next (handleUserPrompt/handleLevelPopup) already sets level-mode
+      // correctly before it does, so there's nothing to clean up here.
+      caption.classList.remove("show");
       resolve();
     };
   });

@@ -1027,7 +1027,13 @@ model-viewer {
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
-  padding: 0;
+  /* Padding + matching negative margin grows the tappable box on a
+     touchscreen well past the underlined word itself, without shifting
+     where the text visually sits — a near-miss tap used to land on the
+     caption behind it instead, which reopens the choice/reply options
+     since that's the caption's own "answer this" tap target. */
+  padding: 12px 10px;
+  margin: -12px -10px -12px 0;
 }
 
 /* Level pop-up: same .ar-caption bubble as the reply prompt above, just
