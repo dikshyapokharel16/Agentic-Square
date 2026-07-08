@@ -665,6 +665,12 @@ model-viewer {
     max-height: calc(100vh - 90px);
   }
 
+  .furniture-ar-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 1.2rem;
+  }
+
   .furniture-ar-btn[data-idx="0"] { left: 27%; top: 14.5%; } /* Pallet Planters */
   .furniture-ar-btn[data-idx="1"] { left: 73%; top: 14.5%; } /* Pallet Seatings */
   .furniture-ar-btn[data-idx="2"] { left: 27%; top: 62.5%; } /* Wooden Benches */
@@ -676,9 +682,10 @@ model-viewer {
 
   /* Phone's baked-in title sits higher/smaller than the desktop image's,
      so the hint needs its own closer top offset here rather than sharing
-     the desktop value. */
+     the desktop value — pulled up further to clear the first row of
+     drawings, which start higher up on this layout than 6.5% left room for. */
   .furniture-hint {
-    top: 6.5%;
+    top: 3.8%;
   }
 }
 
