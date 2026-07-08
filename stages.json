@@ -1,6 +1,6 @@
 [
-  { "id": 0, "name": "Stage 0", "glb": "models/stage-00/model.glb", "usdz": "models/stage-00/model.usdz", "poster": "models/stage-00/poster.webp" },
-  { "id": 1, "name": "Stage 1", "glb": "models/stage-01/model.glb", "usdz": "models/stage-01/model.usdz", "poster": "models/stage-01/poster.webp" },
-  { "id": 2, "name": "Stage 2", "glb": "models/stage-02/model.glb", "usdz": "models/stage-02/model.usdz", "poster": "models/stage-02/poster.webp" },
-  { "id": 3, "name": "Stage 3", "glb": "models/stage-03/model.glb", "usdz": "models/stage-03/model.usdz", "poster": "models/stage-03/poster.webp" }
+  { "id": 0, "name": "Stage 0", "glb": "websitemodels/stage-00/websitemodel.glb", "poster": "websitemodels/stage-00/poster.webp", "arGlb": "ARmodels/stage-00/model.glb", "arUsdz": "ARmodels/stage-00/model.usdz" },
+  { "id": 1, "name": "Stage 1", "glb": "websitemodels/stage-01/websitemodel.glb", "poster": "websitemodels/stage-01/poster.webp", "arGlb": "ARmodels/stage-01/model.glb", "arUsdz": "ARmodels/stage-01/model.usdz" },
+  { "id": 2, "name": "Stage 2", "glb": "websitemodels/stage-02/websitemodel.glb", "poster": "websitemodels/stage-02/poster.webp", "arGlb": "ARmodels/stage-02/model.glb", "arUsdz": "ARmodels/stage-02/model.usdz" },
+  { "id": 3, "name": "Stage 3", "glb": "websitemodels/stage-03/websitemodel.glb", "poster": "websitemodels/stage-03/poster.webp", "arGlb": "ARmodels/stage-03/model.glb", "arUsdz": "ARmodels/stage-03/model.usdz" }
 ]

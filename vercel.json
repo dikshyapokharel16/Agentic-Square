@@ -1,22 +1,36 @@
 {
   "headers": [
     {
-      "source": "/models/(.*).glb",
+      "source": "/websitemodels/(.*).glb",
       "headers": [
         { "key": "Content-Type", "value": "model/gltf-binary" },
         { "key": "Cache-Control", "value": "public, max-age=3600" }
       ]
     },
     {
-      "source": "/models/(.*).usdz",
+      "source": "/websitemodels/(.*).usdz",
       "headers": [
         { "key": "Content-Type", "value": "model/vnd.usdz+zip" },
         { "key": "Cache-Control", "value": "public, max-age=3600" }
       ]
     },
     {
-      "source": "/models/(.*).webp",
+      "source": "/websitemodels/(.*).webp",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
+    },
+    {
+      "source": "/ARmodels/(.*).glb",
+      "headers": [
+        { "key": "Content-Type", "value": "model/gltf-binary" },
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    },
+    {
+      "source": "/ARmodels/(.*).usdz",
+      "headers": [
+        { "key": "Content-Type", "value": "model/vnd.usdz+zip" },
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
     }
   ]
 }

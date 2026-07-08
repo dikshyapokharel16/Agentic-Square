@@ -14,16 +14,18 @@ No build step — `index.html`, `main.js`, `styles.css` are loaded directly as s
 
 **Local dev:** serve the repo root over HTTP (relative `fetch("stages.json")` / `fetch("messages.json")` calls fail under `file://`), e.g. `npx serve .`, then open `index.html`.
 
-**Deploy:** push to `main` — Vercel auto-deploys from GitHub (see commit `096336f`). `vercel.json` only sets `Content-Type`/`Cache-Control` headers for `models/*.glb`/`*.usdz`/`*.webp`.
+**Deploy:** push to `main` — Vercel auto-deploys from GitHub (see commit `096336f`). `vercel.json` only sets `Content-Type`/`Cache-Control` headers for `websitemodels/*.glb`/`*.usdz`/`*.webp` and `ARmodels/*.glb`/`*.usdz`.
 
 ### 3D model scaling (`tools/`, see `tools/README.md` for the full pipeline)
 
-SketchUp/Blender exports come in ~20x oversized. Run raw exports through these before dropping into `models/stage-NN/`:
+SketchUp/Blender exports come in ~20x oversized. Run raw exports through these before dropping into `websitemodels/stage-NN/`:
 
 ```
-node fix-glb-scale.mjs <raw.glb> ../models/stage-NN/model.glb 0.0114        # Android — multiplier on the current file
-python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.04556   # iOS — absolute factor on the raw export, NOT the same number as .glb's
+node fix-glb-scale.mjs <raw.glb> ../websitemodels/stage-NN/model.glb 0.0114        # Android — multiplier on the current file
+python fix-usdz-scale.py <raw.usdz> ../websitemodels/stage-NN/model.usdz --factor 0.04556   # iOS — absolute factor on the raw export, NOT the same number as .glb's
 ```
+
+Same scripts, same flags, work identically for the separate AR-only models (see "AR model vs. display model" below) — just point the output path at `../ARmodels/stage-NN/model.glb` / `.usdz` instead of `../websitemodels/stage-NN/`.
 
 **`.glb` and `.usdz` need different factor *values*, not just different flags** — they're independent export pipelines with different baked-in prior scale corrections, so the same raw model needs a different number per format. Verify actual size (not just the factor) with `node inspect-glb.mjs <path>` / `python inspect-usdz.py <path>` — target ~1.8m longest side in a 2m×2m AR tracking area. `fix-glb-scale.mjs` and `fix-usdz-scale.py` also resize/re-encode textures (2048×2048 max) — oversized textures, not geometry, are usually the biggest win on load time; `fix-glb-scale.mjs` additionally simplifies geometry (meshoptimizer) and Draco-compresses on the way out. One-time setup: `npm install` in `tools/` (needs `@gltf-transform/core`, and `sharp` for any plain image conversion/resizing work); Python side needs `pip install usd-core Pillow`.
 
@@ -39,9 +41,17 @@ Everything runs client-side in `main.js` after `index.html` loads `stages.json` 
 
 ### Two independent state machines driven by scroll, not a timer
 
-- **`STAGES`** (from `stages.json`): ordered list of `{glb, usdz, poster}` per design stage — currently 4 stages (00–03), all populated. `applyStage(i)` swaps the `<model-viewer>` `src`/`ios-src`/`poster`; if a stage ever ships without a `glb` (e.g. while a new one is mid-production), it keeps showing whichever model is already loaded rather than looking "broken". `camera-orbit` is set to `"auto auto 85%"` — same auto-framed angle/target per model, just a slightly closer starting distance than model-viewer's own 100% default.
+- **`STAGES`** (from `stages.json`): ordered list of `{glb, poster, arGlb, arUsdz}` per design stage — currently 4 stages (00–03), all populated. `applyStage(i)` swaps the `<model-viewer>` `src`/`ios-src`/`poster`; if a stage ever ships without a `glb` (e.g. while a new one is mid-production), it keeps showing whichever model is already loaded rather than looking "broken". `camera-orbit` is set to `"auto auto 85%"` — same auto-framed angle/target per model, just a slightly closer starting distance than model-viewer's own 100% default.
 - **`MESSAGES`** (from `messages.json`, personalized copy of `RAW_MESSAGES`): the chat script. Content is **scroll-revealed, not autoplayed** — `revealIdx` only advances when the visitor scrolls `.chatbody` toward its current bottom (`fillViewport()`, triggered by a scroll listener, `resize`, and after every reveal). `revealNext()` plays the typing-dots beat first for every message-shaped entry (`msg`/`poll`/`image`/`file` — sender or visitor alike) before swapping it for the real bubble via `renderEntry()`. A `#reveal-spacer` element keeps `.chatbody` scrollable even when revealed content doesn't yet overflow it, so the scroll listener always has something to fire on; it's removed once the story ends.
 - A `type:"image"` entry is the sync point: `renderEntry` increments `currentStage` and calls `applyStage()` — so the *order and count* of `image` entries in `messages.json` must match the intended stage sequence in `stages.json`.
+
+### AR model vs. display model
+
+The model shown inline next to the chat (`stage.glb`, `<model-viewer>`'s `src`) is deliberately a different, more detailed file than what actually gets placed in AR — AR needs to stay lightweight on-device. `stage.arGlb`/`stage.arUsdz` (`ARmodels/stage-NN/`) are the AR-only pair, kept in a separate top-level folder from the display models in `websitemodels/stage-NN/` — the inline display only ever needs the `.glb` (it renders via `<model-viewer>`'s own WebGL/three.js canvas on every platform, including iPad/iOS Safari), while AR needs both a `.glb` (Android Scene Viewer/WebXR) and a `.usdz` (iOS Quick Look), since those two AR handoffs each require a different file format.
+
+- **iOS Quick Look** already reads a distinct `ios-src` independent of `src` (a model-viewer/AR-Quick-Look primitive, not something this codebase built) — `ios-src` is always set to `stage.arUsdz`, so no further trick is needed there.
+- **Android Scene Viewer and in-page WebXR have no equivalent separate attribute** — both hand off whatever `src` currently is. So the AR button's click handler (in `createViewer`, intentionally *not* using model-viewer's `slot="ar-button"` auto-wiring, which would call `activateAR()` on the still-showing display model) swaps `viewer.src` to `stage.arGlb` first, waits for its `load` event, then calls `viewer.activateAR()` itself. The `ar-status` listener swaps `src` back to `stage.glb` once the session reports `"not-presenting"` (tracked via the `arUsingSimpleModel` flag, checked independently of `arPaused` so a cancelled/never-started AR attempt still gets cleaned up). One accepted UX side effect: because in-page WebXR renders live in the same canvas, exiting a WebXR AR session shows a brief visible reload as `src` swaps back to the display model; Quick Look and Scene Viewer hand off to a native app/overlay so they're unaffected.
+- `preloadArGlb` warms the cache for the *current* stage's `arGlb` (mirrors the existing `preloadStage` next-stage prefetch) so tapping "View AR" doesn't stall on a cold fetch before the swap.
 
 ### Playback control flow
 
@@ -91,7 +101,7 @@ Marktplatz speaks with a different institutional "hat" depending on the story be
 - **No real `<input>` anywhere.** This is a touchscreen kiosk with no physical keyboard; a real `<input>` would summon the OS's native on-screen keyboard over the whole display. `buildKeyboard()` renders a plain QWERTY button grid instead, shared between full-screen name entry and the compact in-phone reply keyboard.
 - **Parallax intro background** uses mouse movement on desktop and touch drag (`touchstart`/`touchmove`) on the actual kiosk (no mouse there) — no motion-permission prompt needed either, unlike an earlier `deviceorientation`-tilt version.
 - **AR panel centering/caption positioning** (`centerViewerAroundVisibleArea`, `positionArCaption`) is computed from the floating phone panel's actual `getBoundingClientRect()` on resize, not fixed CSS offsets, since the model-viewer's own centering logic doesn't know the phone panel is covering part of the screen.
-- **Custom AR button** replaces model-viewer's built-in one via its `slot="ar-button"` mechanism — the built-in icon-only button can render blank if its internal asset fails to load.
+- **Custom AR button** replaces model-viewer's built-in one (the built-in icon-only button can render blank if its internal asset fails to load) — but deliberately isn't placed in model-viewer's `slot="ar-button"`, since that slot auto-wires clicks straight to `activateAR()`; see "AR model vs. display model" above for why this codebase needs to intercept the click first.
 
 ### Poll state & reactions
 

@@ -1,7 +1,13 @@
 # Model scale-correction tools
 
 SketchUp/Blender exports for this project come in ~20x oversized. Run each raw
-export through the matching script before dropping it into `demo/models/stage-NN/`.
+export through the matching script before dropping it into `websitemodels/stage-NN/`.
+
+Each stage also has a separate, simpler model used only for AR (the inline
+view next to the chat and the AR placement are decoupled — see `stages.json`'s
+`glb`/`poster` vs. `arGlb`/`arUsdz` fields, and `main.js`'s AR button handler).
+These scripts work the same way for that pair, just pointed at
+`../ARmodels/stage-NN/model.glb` / `.usdz` as the output path instead.
 
 The model is sized to fit a 2m x 2m room (longest side ~1.8m, with a small
 margin for AR tracking drift).
@@ -20,12 +26,12 @@ while Android looked fine.
 One-time setup: `npm install` in this folder (installs `@gltf-transform/core`).
 
 ```
-node fix-glb-scale.mjs <raw.glb> ../models/stage-NN/model.glb 0.0114
+node fix-glb-scale.mjs <raw.glb> ../websitemodels/stage-NN/model.glb 0.0114
 ```
 
 Optional third argument overrides the default factor of `0.05` (i.e. divide by 20) —
 pass `0.0114` to match the current room-scale sizing used for stages 00-03.
-Verify with `node inspect-glb.mjs ../models/stage-NN/model.glb` (prints material
+Verify with `node inspect-glb.mjs ../websitemodels/stage-NN/model.glb` (prints material
 info, not size) or check bounds by eye in a viewer — target is ~1.8m longest side.
 
 **This script also resizes/re-encodes textures (2048x2048 max, WebP)** and
@@ -45,7 +51,7 @@ Requires Python with the `usd-core` and `Pillow` packages:
 `pip install usd-core Pillow`.
 
 ```
-python fix-usdz-scale.py <raw.usdz> ../models/stage-NN/model.usdz --factor 0.04556
+python fix-usdz-scale.py <raw.usdz> ../websitemodels/stage-NN/model.usdz --factor 0.04556
 ```
 
 `--factor` here is an **absolute** scale on the raw export (not a multiplier
@@ -55,7 +61,7 @@ but if a new raw `.usdz` export starts from a different native scale, this
 number won't automatically be right. Always confirm with:
 
 ```
-python inspect-usdz.py ../models/stage-NN/model.usdz
+python inspect-usdz.py ../websitemodels/stage-NN/model.usdz
 ```
 
 which prints both the baked-in scale op and the actual world-space size in
@@ -89,7 +95,7 @@ exported as its own fully-baked, independent copy of the geometry, at up to
 this (see limitation above), but it's fixable separately:
 
 ```
-python dedupe-usdz-mesh.py ../models/stage-NN/model.usdz ../models/stage-NN/model.usdz
+python dedupe-usdz-mesh.py ../websitemodels/stage-NN/model.usdz ../websitemodels/stage-NN/model.usdz
 ```
 
 USD's crate (`.usdc`) format automatically stores only one copy of any array
@@ -143,14 +149,14 @@ Per model, in Blender:
    exporter write `material.occlusionTexture` on export — without this node,
    the bake exists as an image but never reaches the glTF file.
 4. Export the raw (still oversized) `.glb` as usual, then run it through the
-   normal scale/compress step: `node fix-glb-scale.mjs <raw.glb> ../models/stage-NN/model.glb 0.0114`.
+   normal scale/compress step: `node fix-glb-scale.mjs <raw.glb> ../websitemodels/stage-NN/model.glb 0.0114`.
    This only touches node scale and Draco-compresses geometry — it doesn't
    touch materials/textures, so the occlusion texture passes through untouched.
 
 After processing, confirm the texture actually made it through:
 
 ```
-node inspect-glb.mjs ../models/stage-NN/model.glb
+node inspect-glb.mjs ../websitemodels/stage-NN/model.glb
 ```
 
 Look for `occlusionTexture: true` on the relevant material(s).

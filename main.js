@@ -10,11 +10,27 @@ let activePollIndex = null;
 let revealIdx = 0;
 let revealing = false;
 let arPaused = false;
+let arUsingSimpleModel = false; // true while viewer.src has been swapped to the stage's simpler arGlb for an in-progress AR handoff
 let storyFinished = false;
 let scrubbing = false; // scrolled away from the live bottom, previewing an earlier stage
 let scrubStage = -1; // stage currently previewed while scrubbing, -1 when not scrubbing
 let lightboxOpen = false; // an enlarged chat image is showing
 let firstImageIdx = -1; // computed once MESSAGES loads — see init
+
+// Custom bounded auto-rotate (see createViewer/stepAutoRotate) — model-viewer's
+// own `auto-rotate` doesn't respect min-camera-orbit/max-camera-orbit at all;
+// it turned out to just jitter a few degrees back and forth around the start
+// angle rather than sweeping cleanly to the limits, so this drives theta
+// directly instead. Bounces between AUTOROTATE_MIN/MAX_THETA_DEG, pausing
+// whenever a visitor drags and resuming after they let go.
+const AUTOROTATE_MIN_THETA_DEG = -16.9;
+const AUTOROTATE_MAX_THETA_DEG = 93.1;
+const AUTOROTATE_SPEED_DEG_PER_SEC = 6;
+const AUTOROTATE_RESUME_DELAY_MS = 3000;
+let autoRotateDirection = 1;
+let autoRotatePaused = false;
+let autoRotateResumeTimer = null;
+let autoRotateLastFrameTime = null;
 let pendingLevelEntry = null; // a level marker passed through, waiting for its anchor message to reveal
 
 async function loadJSON(path) {
@@ -34,7 +50,7 @@ function stageAt(i) {
 // before a re-scale can keep serving the stale one for up to an hour.
 // Bump this whenever a stage's model file is regenerated so every deploy
 // forces a fresh fetch regardless of that cache.
-const MODEL_VERSION = "12";
+const MODEL_VERSION = "14";
 
 function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
@@ -128,7 +144,7 @@ window.addEventListener("touchmove", handleTouch, { passive: true });
    an impatient visitor sit through the full hold. */
 const STORY_BEATS = [
   "You are one of 9,200 residents living in Westhagen.",
-  "Walking through the square, you noticed something new — a cluster of wooden pallets that wasn't there before.",
+  "Walking through the square, you noticed something new: a cluster of wooden pallets that wasn't there before.",
   "Beside them, a QR code. You scanned it.",
 ];
 const STORY_BEAT_HOLD_MS = 3500;
@@ -281,7 +297,7 @@ function createViewer(stage) {
 
   viewer = document.createElement("model-viewer");
   viewer.setAttribute("src", withVersion(stage.glb));
-  if (stage.usdz) viewer.setAttribute("ios-src", withVersion(stage.usdz));
+  if (stage.arUsdz) viewer.setAttribute("ios-src", withVersion(stage.arUsdz));
   if (stage.poster) viewer.setAttribute("poster", withVersion(stage.poster));
   viewer.setAttribute("alt", `${stage.name || "3D model"} — preview`);
   viewer.setAttribute("ar", "");
@@ -289,10 +305,37 @@ function createViewer(stage) {
   viewer.setAttribute("ar-scale", "fixed");
   viewer.setAttribute("ar-placement", "floor");
   viewer.setAttribute("camera-controls", "");
-  // Radius as a % of model-viewer's own auto-framed distance, keeps the
-  // default auto angle/target per model, just moves the camera closer.
-  viewer.setAttribute("camera-orbit", "auto auto 85%");
-  viewer.setAttribute("auto-rotate", "");
+  // Fixed angle (not "auto"), tuned by hand in-browser against stage-00 and
+  // reused for every stage — all 4 stage models share nearly identical
+  // bounding-box dimensions (same physical square, different design), so one
+  // fixed orbit reads consistently across stage swaps instead of each model
+  // picking its own "auto" angle/distance.
+  viewer.setAttribute("camera-orbit", "38.1deg 64.8deg 115.6m");
+  // Panned by hand in-browser to this point rather than leaving it at the
+  // model's own bounding-box center (model-viewer's default) — same
+  // shared-across-all-4-stages reasoning as the fixed camera-orbit above.
+  viewer.setAttribute("camera-target", "-12.56m 0.09m -1.3m");
+  // Narrower than model-viewer's 30deg default — flattens perspective
+  // distortion for a cleaner architectural look.
+  viewer.setAttribute("field-of-view", "20deg");
+  // Without this, model-viewer silently enforces its own much-larger
+  // "auto" minimum distance (a safety margin against clipping into the
+  // model) whenever the narrow field-of-view above is combined with this
+  // camera-target — any zoom-in tighter than ~123m was getting clamped
+  // back out to that, no matter what radius was requested here or via
+  // pinch/scroll. This explicitly opens that floor back up. Theta is also
+  // constrained here (see max-camera-orbit below) — together these box in
+  // how far a visitor can spin/zoom away from the tuned default view.
+  viewer.setAttribute("min-camera-orbit", "-16.9deg auto 5m");
+  // phi capped at 90deg (eye-level horizon) so visitors can't drag the
+  // orbit down past horizontal and end up looking up at the model's
+  // underside; model-viewer's own default phi range otherwise allows
+  // swinging almost all the way underneath. Theta capped ±55deg either
+  // side of the default 38.1deg (i.e. -16.9deg to 93.1deg, 110deg total,
+  // paired with min-camera-orbit above) so the model can't be spun all
+  // the way around. Radius capped at 1.2x the default 115.6m distance so
+  // pinch/scroll zoom-out can't go further than that.
+  viewer.setAttribute("max-camera-orbit", "93.1deg 90deg 138.7m");
   viewer.setAttribute("shadow-intensity", "1");
   viewer.setAttribute("shadow-softness", "0.75");
   viewer.setAttribute("loading", "eager");
@@ -303,20 +346,76 @@ function createViewer(stage) {
     if (event.detail.status === "session-started") {
       arPaused = true;
       updateScrollHint();
-    } else if (event.detail.status === "not-presenting" && arPaused) {
-      arPaused = false;
-      fillViewport();
+    } else if (event.detail.status === "not-presenting") {
+      // Scene Viewer (Android) and in-page WebXR both launch AR using
+      // whatever `src` is currently set — there's no separate Android-only
+      // AR attribute in model-viewer, unlike ios-src for Quick Look. So the
+      // AR button handler below temporarily points `src` at the stage's
+      // simpler arGlb before activating AR; swap it back now that AR is done
+      // so the inline view goes back to showing the full-detail model.
+      if (arUsingSimpleModel) {
+        viewer.src = withVersion(stageAt(currentStage).glb);
+        arUsingSimpleModel = false;
+      }
+      if (arPaused) {
+        arPaused = false;
+        fillViewport();
+      }
     }
   });
 
+  // Pause the bounded auto-rotate (below) for a few seconds after the
+  // visitor drags the model themselves, same "give it a rest, then resume"
+  // feel as model-viewer's own auto-rotate-delay.
+  viewer.addEventListener("camera-change", (event) => {
+    if (event.detail.source !== "user-interaction") return;
+    autoRotatePaused = true;
+    clearTimeout(autoRotateResumeTimer);
+    autoRotateResumeTimer = setTimeout(() => {
+      autoRotatePaused = false;
+      autoRotateLastFrameTime = null;
+    }, AUTOROTATE_RESUME_DELAY_MS);
+  });
+
+  // TEMPORARY: disabled while re-finding the camera-target/angle by hand —
+  // this loop was fighting live drag input, making rotation feel broken.
+  // Re-enable once the new target/angle is settled.
+  // requestAnimationFrame(stepAutoRotate);
+
   // Replace model-viewer's built-in AR button (an icon-only graphic that can
   // render as a blank/black shape if its internal asset fails to load) with
-  // our own clearly-labeled button, using model-viewer's documented
-  // slot="ar-button" mechanism — clicks on it are wired to AR automatically.
+  // our own clearly-labeled button. Deliberately NOT using slot="ar-button" —
+  // that slot auto-wires a click straight to activateAR(), which would launch
+  // Scene Viewer/WebXR with whatever `src` the inline view currently has
+  // (the full-detail model). Instead this button swaps `src` to the stage's
+  // simpler arGlb first (if provided), then calls activateAR() itself once
+  // that's loaded, so Android/WebXR AR shows the simple model instead of the
+  // one on screen. Quick Look on iOS is unaffected either way since it reads
+  // ios-src directly, never `src`. Positioning is unaffected by leaving the
+  // named slot — `.ar-button`'s own `position: absolute` (styles.css) already
+  // does the placement, not the slot.
   const arButton = document.createElement("button");
-  arButton.slot = "ar-button";
   arButton.className = "ar-button";
-  arButton.textContent = "View AR";
+  arButton.textContent = "View in Your Space";
+  arButton.addEventListener("click", () => {
+    const stageNow = stageAt(currentStage);
+    if (!stageNow.arGlb) {
+      viewer.activateAR();
+      return;
+    }
+    arUsingSimpleModel = true;
+    // Falls back to launching AR even if arGlb fails to load (e.g. not
+    // dropped into ARmodels/ yet) rather than leaving the button dead —
+    // same "degrade gracefully" spirit as the rest of the stage handling.
+    const launch = () => {
+      viewer.removeEventListener("load", launch);
+      viewer.removeEventListener("error", launch);
+      viewer.activateAR();
+    };
+    viewer.addEventListener("load", launch);
+    viewer.addEventListener("error", launch);
+    viewer.src = withVersion(stageNow.arGlb);
+  });
   viewer.appendChild(arButton);
 
   // Visible loading feedback — model files can be several MB, and swapping
@@ -339,6 +438,38 @@ function createViewer(stage) {
   centerViewerAroundVisibleArea();
 }
 
+// Drives the bounded auto-rotate described above createViewer — reads the
+// viewer's current orbit, nudges theta by elapsed time, bounces the
+// direction at either limit, and writes it back. Runs continuously (one
+// requestAnimationFrame loop started once in createViewer); arPaused/
+// autoRotatePaused just make each tick a no-op rather than the loop
+// stopping and needing to be restarted.
+function stepAutoRotate(now) {
+  requestAnimationFrame(stepAutoRotate);
+  if (!viewer || arPaused || autoRotatePaused) {
+    autoRotateLastFrameTime = null;
+    return;
+  }
+  if (autoRotateLastFrameTime == null) {
+    autoRotateLastFrameTime = now;
+    return;
+  }
+  const dt = (now - autoRotateLastFrameTime) / 1000;
+  autoRotateLastFrameTime = now;
+
+  const orbit = viewer.getCameraOrbit();
+  let thetaDeg = (orbit.theta * 180) / Math.PI + autoRotateDirection * AUTOROTATE_SPEED_DEG_PER_SEC * dt;
+  if (thetaDeg >= AUTOROTATE_MAX_THETA_DEG) {
+    thetaDeg = AUTOROTATE_MAX_THETA_DEG;
+    autoRotateDirection = -1;
+  } else if (thetaDeg <= AUTOROTATE_MIN_THETA_DEG) {
+    thetaDeg = AUTOROTATE_MIN_THETA_DEG;
+    autoRotateDirection = 1;
+  }
+  const phiDeg = (orbit.phi * 180) / Math.PI;
+  viewer.cameraOrbit = `${thetaDeg}deg ${phiDeg}deg ${orbit.radius}m`;
+}
+
 // Warm the browser's HTTP cache for the next stage's model while the current
 // one is still being viewed/chatted about, so by the time the chat actually
 // advances to it, the file is already local and the swap is instant instead
@@ -349,6 +480,17 @@ function preloadStage(i) {
   if (!stage || !stage.glb || preloadedStages.has(i)) return;
   preloadedStages.add(i);
   fetch(withVersion(stage.glb)).catch(() => {});
+}
+
+// Warm the cache for the *current* stage's simpler arGlb too, so tapping
+// "View AR" (which swaps to it, see createViewer's button handler) doesn't
+// stall on a cold fetch before AR can launch.
+const preloadedArStages = new Set();
+function preloadArGlb(i) {
+  const stage = stageAt(i);
+  if (!stage || !stage.arGlb || preloadedArStages.has(i)) return;
+  preloadedArStages.add(i);
+  fetch(withVersion(stage.arGlb)).catch(() => {});
 }
 
 function applyStage(i) {
@@ -371,6 +513,7 @@ function showStageInViewer(i) {
   if (!stage.glb) return;
 
   preloadStage(i + 1);
+  preloadArGlb(i);
 
   if (!viewer) {
     createViewer(stage);
@@ -378,7 +521,8 @@ function showStageInViewer(i) {
   }
 
   viewer.src = withVersion(stage.glb);
-  if (stage.usdz) viewer.setAttribute("ios-src", withVersion(stage.usdz));
+  arUsingSimpleModel = false;
+  if (stage.arUsdz) viewer.setAttribute("ios-src", withVersion(stage.arUsdz));
   else viewer.removeAttribute("ios-src");
   if (stage.poster) viewer.setAttribute("poster", withVersion(stage.poster));
 }
