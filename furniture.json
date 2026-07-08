@@ -1,0 +1,10 @@
+[
+  { "id": 0, "name": "Pallet Planters", "arGlb": "ARmodels/furniture/01-%20Pallet%20Planters/model.glb", "arUsdz": "ARmodels/furniture/01-%20Pallet%20Planters/model.usdz" },
+  { "id": 1, "name": "Pallet Seatings", "arGlb": "ARmodels/furniture/02-%20Pallet%20Seatings/model.glb", "arUsdz": "ARmodels/furniture/02-%20Pallet%20Seatings/model.usdz" },
+  { "id": 2, "name": "Wooden Benches", "arGlb": "ARmodels/furniture/03-%20Wooden%20Benches/model.glb", "arUsdz": "ARmodels/furniture/03-%20Wooden%20Benches/model.usdz" },
+  { "id": 3, "name": "Stepped Playground", "arGlb": "ARmodels/furniture/04-%20Stepped%20Playground/model.glb", "arUsdz": "ARmodels/furniture/04-%20Stepped%20Playground/model.usdz" },
+  { "id": 4, "name": "Table Tennis", "arGlb": "ARmodels/furniture/05-%20Table%20Tennis/model.glb", "arUsdz": "ARmodels/furniture/05-%20Table%20Tennis/model.usdz" },
+  { "id": 5, "name": "Jumping Brickwall", "arGlb": "ARmodels/furniture/06-%20Jumping%20brickwall/model.glb", "arUsdz": "ARmodels/furniture/06-%20Jumping%20brickwall/model.usdz" },
+  { "id": 6, "name": "Sand Box", "arGlb": "ARmodels/furniture/07-%20Sand%20Box/model.glb", "arUsdz": "ARmodels/furniture/07-%20Sand%20Box/model.usdz" },
+  { "id": 7, "name": "Brick Stand", "arGlb": "ARmodels/furniture/08-%20Brick%20Stand/model.glb", "arUsdz": "ARmodels/furniture/08-%20Brick%20Stand/model.usdz" }
+]

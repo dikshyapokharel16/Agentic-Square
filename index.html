@@ -29,6 +29,31 @@
     </section>
   </div>
 
+  <div id="furnitureGallery" class="furniture-gallery">
+    <div class="furniture-frame">
+      <!-- Title and per-item names are baked into the artwork itself now —
+           this element only overlays the tappable AR buttons on top of it.
+           Phone gets its own portrait layout (2 cols x 4 rows, different
+           item order) via the <source>, not just a scaled-down desktop
+           image — button positions below are overridden to match it in the
+           (max-width: 700px) block in styles.css. -->
+      <picture>
+        <source media="(max-width: 700px)" srcset="Furnitures/FINAL%20FURNITURE%20Phone.png">
+        <img src="Furnitures/FINAL%20FURNITURE.png" class="furniture-bg" alt="Furniture pieces" />
+      </picture>
+      <p class="furniture-hint">Touch the icon to view it in AR</p>
+      <button class="furniture-ar-btn" data-idx="0" aria-label="View Pallet Planters in AR"><i class="ti ti-augmented-reality"></i></button>
+      <button class="furniture-ar-btn" data-idx="1" aria-label="View Pallet Seatings in AR"><i class="ti ti-augmented-reality"></i></button>
+      <button class="furniture-ar-btn" data-idx="2" aria-label="View Wooden Benches in AR"><i class="ti ti-augmented-reality"></i></button>
+      <button class="furniture-ar-btn" data-idx="3" aria-label="View Stepped Playground in AR"><i class="ti ti-augmented-reality"></i></button>
+      <button class="furniture-ar-btn" data-idx="4" aria-label="View Table Tennis in AR"><i class="ti ti-augmented-reality"></i></button>
+      <button class="furniture-ar-btn" data-idx="5" aria-label="View Jumping Brickwall in AR"><i class="ti ti-augmented-reality"></i></button>
+      <button class="furniture-ar-btn" data-idx="6" aria-label="View Sand Box in AR"><i class="ti ti-augmented-reality"></i></button>
+      <button class="furniture-ar-btn" data-idx="7" aria-label="View Brick Stand in AR"><i class="ti ti-augmented-reality"></i></button>
+    </div>
+    <button id="furnitureDoneBtn" class="furniture-done-btn">Back to the start page</button>
+  </div>
+
   <main class="split">
     <section id="ar-panel">
       <div id="viewer-root">
@@ -95,6 +120,12 @@
       </div>
     </section>
   </main>
+
+  <!-- AR-only, never shown inline — src/ios-src are set per item on click, then
+       activateAR() is called directly (same pattern as the square model's AR
+       button in createViewer). Kept off-screen rather than display:none since
+       some browsers won't run WebXR/AR activation on a non-rendered element. -->
+  <model-viewer id="furnitureArViewer" ar ar-modes="webxr scene-viewer quick-look"></model-viewer>
 
   <script src="main.js"></script>
 </body>

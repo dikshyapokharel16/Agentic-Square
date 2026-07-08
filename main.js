@@ -1,4 +1,5 @@
 let STAGES = [];
+let FURNITURE = [];
 let MESSAGES = [];
 let RAW_MESSAGES = []; // unpersonalized script, kept so a fresh visitor can re-personalize from scratch
 let visitorName = "";
@@ -122,6 +123,15 @@ const introName = document.getElementById("intro-name");
 const nameDisplay = document.getElementById("nameDisplay");
 const startBtn = document.getElementById("startBtn");
 const scanQrBtn = document.getElementById("scanQrBtn");
+
+/* ---------- furniture AR gallery ----------
+   Shown once the chat story finishes, instead of resetting straight back to
+   the intro screen — see the finish sequence in revealNext(). */
+const furnitureGallery = document.getElementById("furnitureGallery");
+const furnitureDoneBtn = document.getElementById("furnitureDoneBtn");
+const furnitureArViewer = document.getElementById("furnitureArViewer");
+const FURNITURE_IDLE_TIMEOUT_MS = 45000;
+let furnitureIdleTimer = null;
 
 /* ---------- intro: parallax background ----------
    Mouse for desktop/browser preview; finger position for touchscreens (drag
@@ -301,6 +311,47 @@ function resetToIntro() {
   currentStage = 0;
   showIntro();
 }
+
+// Sets src/ios-src on the dedicated (never-shown) furniture AR viewer and
+// fires activateAR() immediately, same as the square model's own AR button —
+// Quick Look (iOS) reads ios-src directly and Scene Viewer/WebXR (Android)
+// only needs the URL string, so there's nothing to gain by waiting on a
+// "load" event first.
+function activateFurnitureAR(item) {
+  if (item.arGlb) furnitureArViewer.setAttribute("src", withVersion(item.arGlb));
+  if (item.arUsdz) furnitureArViewer.setAttribute("ios-src", withVersion(item.arUsdz));
+  furnitureArViewer.activateAR();
+}
+
+// Restarts the "nobody's touched this screen in a while" timer — called on
+// every tap inside the gallery (button or otherwise) so an actively browsing
+// visitor is never cut off mid-decision, only one who's walked away.
+function resetFurnitureIdleTimer() {
+  clearTimeout(furnitureIdleTimer);
+  furnitureIdleTimer = setTimeout(hideFurnitureGallery, FURNITURE_IDLE_TIMEOUT_MS);
+}
+
+function showFurnitureGallery() {
+  furnitureGallery.classList.add("active");
+  resetFurnitureIdleTimer();
+}
+
+// Reached either by the visitor tapping Done or by the idle timeout above —
+// both lead to the same place, a clean intro screen for the next visitor.
+function hideFurnitureGallery() {
+  clearTimeout(furnitureIdleTimer);
+  furnitureGallery.classList.remove("active");
+  resetToIntro();
+}
+
+furnitureDoneBtn.addEventListener("click", hideFurnitureGallery);
+furnitureGallery.addEventListener("pointerdown", resetFurnitureIdleTimer);
+document.querySelectorAll(".furniture-ar-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const item = FURNITURE[Number(btn.dataset.idx)];
+    if (item) activateFurnitureAR(item);
+  });
+});
 
 /* ---------- AR panel ---------- */
 
@@ -1322,10 +1373,12 @@ async function revealNext() {
     await sleep(PACE.fadeOut);
     chatbody().classList.remove("fade-out");
     chatbody().innerHTML = "";
-    // Each playthrough is one visitor's session — loop back to the intro
-    // instead of silently restarting, so the next person isn't handed the
-    // previous visitor's name.
-    resetToIntro();
+    // Each playthrough is one visitor's session, so this doesn't silently
+    // loop back to the intro and hand the next person the previous
+    // visitor's name — instead it shows the furniture AR gallery first;
+    // that screen itself calls resetToIntro() once the visitor taps Done
+    // or walks away (see showFurnitureGallery/hideFurnitureGallery above).
+    showFurnitureGallery();
     return;
   }
 
@@ -1624,12 +1677,27 @@ imageLightboxImg.addEventListener("pointercancel", endLightboxPointer);
 
 /* ---------- init ---------- */
 
-Promise.all([loadJSON("stages.json"), loadJSON("messages.json")])
-  .then(([stages, messages]) => {
+Promise.all([loadJSON("stages.json"), loadJSON("messages.json"), loadJSON("furniture.json")])
+  .then(([stages, messages, furniture]) => {
     STAGES = stages;
     RAW_MESSAGES = messages;
     MESSAGES = messages;
+    FURNITURE = furniture;
     firstImageIdx = MESSAGES.findIndex((m) => m.type === "image");
+    // A separate QR code (e.g. a standalone sign near the furniture, not
+    // part of the kiosk's own chat flow) can link straight to ?furniture=1
+    // to land directly on the AR gallery, skipping the name-entry/chat
+    // story entirely — no separate site needed for that, just this param.
+    // Deliberately skips the applyStage(0) preload below in that case: it
+    // downloads the (unrelated, heavier) square-model file for nothing if
+    // a visitor's only reason for being here is browsing furniture; it
+    // still initializes lazily via showStageInViewer's own `if (!viewer)`
+    // guard the first time they actually tap Start for the real chat.
+    if (new URLSearchParams(window.location.search).get("furniture") === "1") {
+      introOverlay.classList.add("hidden");
+      showFurnitureGallery();
+      return;
+    }
     // Preload the first AR model silently behind the intro overlay so it's
     // ready the instant a visitor finishes onboarding — no fresh download
     // stalling the reveal.

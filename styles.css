@@ -545,6 +545,181 @@ model-viewer {
 }
 
 /* ---------- full-screen intro / onboarding ---------- */
+
+/* Shown once the chat story finishes instead of resetting straight to intro —
+   full-screen artwork (title and per-item names are baked into the image
+   itself, see Furnitures/FINAL FURNITURE.png) with one AR-launch button per
+   furniture piece pinned on top of it. Dismissed either by the Done button
+   or an inactivity timeout (see showFurnitureGallery/resetFurnitureIdleTimer
+   in main.js) — never traps a visitor here. */
+.furniture-gallery {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #eef1ef;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 16px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .5s ease, visibility .5s ease;
+}
+
+.furniture-gallery.active {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Locked to the source image's aspect ratio so the button %-positions below
+   line up with the artwork instead of drifting from letterboxing — reserves
+   just enough vertical room (90px) for the Done button so the image itself
+   gets to be as large as possible. The hint text (.furniture-hint) overlays
+   the image itself instead of taking its own line, so it needs no extra
+   budget here. */
+.furniture-frame {
+  position: relative;
+  width: min(100%, calc((100vh - 90px) * (4000 / 2397)));
+  aspect-ratio: 4000 / 2397;
+  max-height: calc(100vh - 90px);
+  flex: 0 1 auto;
+}
+
+.furniture-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Positioned by [data-idx] below, on a clean 4-column x 2-row grid rather
+   than trying to pixel-match every drawing's exact position in the artwork.
+   The (max-width: 700px) block further down overrides these left/top
+   values entirely for the phone image's different 2-col x 4-row layout
+   (see the <picture><source> swap in index.html) — same items, different
+   order, so the index->position mapping isn't just a column/row reflow. */
+.furniture-ar-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent-green);
+  color: #fff;
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+  transition: transform .15s ease;
+}
+
+.furniture-ar-btn:active {
+  transform: translate(-50%, -50%) scale(.9);
+}
+
+/* Expanding, fading ring behind each button so the tappable icons read as
+   "alive"/interactive at a glance, without needing a visitor to already
+   know what the icon means — the hint text below reinforces it further.
+   ::after inherits the button's own position: absolute as its containing
+   block via `inset: 0`, so it needs no left/top of its own. */
+.furniture-ar-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent-green);
+  animation: furniture-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes furniture-pulse {
+  0% { transform: scale(1); opacity: .7; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+.furniture-ar-btn[data-idx="0"] { left: 11.3%; top: 29%; }
+.furniture-ar-btn[data-idx="1"] { left: 36%;   top: 29%; }
+.furniture-ar-btn[data-idx="2"] { left: 66%;   top: 29%; }
+.furniture-ar-btn[data-idx="3"] { left: 91.8%; top: 29%; }
+.furniture-ar-btn[data-idx="4"] { left: 11.3%; top: 78%; }
+.furniture-ar-btn[data-idx="5"] { left: 35.5%; top: 78%; }
+.furniture-ar-btn[data-idx="6"] { left: 66%;   top: 78%; }
+.furniture-ar-btn[data-idx="7"] { left: 94.3%; top: 78%; }
+
+/* Phone: FINAL FURNITURE Phone.png is portrait, 2 cols x 4 rows, and — not
+   just a reflow of the desktop grid — the row order differs (Table Tennis/
+   Jumping Brickwall come before Wooden Benches/Stepped Playground), so each
+   index's position is remapped individually rather than just adding rows. */
+@media (max-width: 700px) {
+  .furniture-frame {
+    width: min(100%, calc((100vh - 90px) * (1125 / 2436)));
+    aspect-ratio: 1125 / 2436;
+    max-height: calc(100vh - 90px);
+  }
+
+  .furniture-ar-btn[data-idx="0"] { left: 27%; top: 14.5%; } /* Pallet Planters */
+  .furniture-ar-btn[data-idx="1"] { left: 73%; top: 14.5%; } /* Pallet Seatings */
+  .furniture-ar-btn[data-idx="2"] { left: 27%; top: 62.5%; } /* Wooden Benches */
+  .furniture-ar-btn[data-idx="3"] { left: 73%; top: 62.5%; } /* Stepped Playground */
+  .furniture-ar-btn[data-idx="4"] { left: 27%; top: 40%;   } /* Table Tennis */
+  .furniture-ar-btn[data-idx="5"] { left: 73%; top: 40%;   } /* Jumping Brickwall */
+  .furniture-ar-btn[data-idx="6"] { left: 27%; top: 82.5%; } /* Sand Box */
+  .furniture-ar-btn[data-idx="7"] { left: 73%; top: 82.5%; } /* Brick Stand */
+
+  /* Phone's baked-in title sits higher/smaller than the desktop image's,
+     so the hint needs its own closer top offset here rather than sharing
+     the desktop value. */
+  .furniture-hint {
+    top: 6.5%;
+  }
+}
+
+/* Overlaid directly on the image, right under the baked-in title (not a
+   separate line taking its own layout space) — top: 11% is eyeballed to
+   sit just below where the desktop artwork's title ends. */
+.furniture-hint {
+  position: absolute;
+  left: 50%;
+  top: 11%;
+  transform: translateX(-50%);
+  margin: 0;
+  width: 100%;
+  font-size: clamp(13px, 1.4vw, 16px);
+  color: #333;
+  text-align: center;
+  pointer-events: none;
+}
+
+.furniture-done-btn {
+  appearance: none;
+  border: none;
+  background: var(--accent-terracotta);
+  color: #fff;
+  font-family: inherit;
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 600;
+  padding: 14px 40px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+#furnitureArViewer {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  left: -9999px;
+  top: -9999px;
+  pointer-events: none;
+}
+
 #intro-overlay {
   position: fixed;
   inset: 0;
