@@ -63,7 +63,7 @@ function stageAt(i) {
 // before a re-scale can keep serving the stale one for up to an hour.
 // Bump this whenever a stage's model file is regenerated so every deploy
 // forces a fresh fetch regardless of that cache.
-const MODEL_VERSION = "15";
+const MODEL_VERSION = "16";
 
 function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
