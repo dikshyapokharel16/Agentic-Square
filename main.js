@@ -773,6 +773,7 @@ function avatarHTML(entry) {
 }
 
 function displayName(entry) {
+  if (entry.sender === "Marktplatz" && entry.role) return `Marktplatz (${entry.role.toLowerCase()})`;
   return entry.sender;
 }
 
