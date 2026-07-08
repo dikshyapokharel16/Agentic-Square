@@ -17,6 +17,19 @@ let scrubStage = -1; // stage currently previewed while scrubbing, -1 when not s
 let lightboxOpen = false; // an enlarged chat image is showing
 let firstImageIdx = -1; // computed once MESSAGES loads — see init
 
+// Tuned by hand in-browser against the website display model (stage.glb).
+// The AR-only model (stage.arGlb) is scaled for real-world AR placement
+// (~1.8m), a completely different absolute scale than the website model's
+// own — so swapping `src` to it for the AR handoff and letting model-viewer
+// adjust its camera there, then swapping `src` back without also restoring
+// these, leaves the display view stuck with a camera meant for the other
+// model's scale (reported as the view going "very zoomed out" after using
+// AR and staying that way). Re-applied whenever the website model is
+// (re)shown — see showStageInViewer and the ar-status "not-presenting"
+// handler below.
+const DEFAULT_CAMERA_ORBIT = "38.1deg 64.8deg 115.6m";
+const DEFAULT_CAMERA_TARGET = "-12.56m 0.09m -1.3m";
+
 // Custom bounded auto-rotate (see createViewer/stepAutoRotate) — model-viewer's
 // own `auto-rotate` doesn't respect min-camera-orbit/max-camera-orbit at all;
 // it turned out to just jitter a few degrees back and forth around the start
@@ -310,11 +323,11 @@ function createViewer(stage) {
   // bounding-box dimensions (same physical square, different design), so one
   // fixed orbit reads consistently across stage swaps instead of each model
   // picking its own "auto" angle/distance.
-  viewer.setAttribute("camera-orbit", "38.1deg 64.8deg 115.6m");
+  viewer.setAttribute("camera-orbit", DEFAULT_CAMERA_ORBIT);
   // Panned by hand in-browser to this point rather than leaving it at the
   // model's own bounding-box center (model-viewer's default) — same
   // shared-across-all-4-stages reasoning as the fixed camera-orbit above.
-  viewer.setAttribute("camera-target", "-12.56m 0.09m -1.3m");
+  viewer.setAttribute("camera-target", DEFAULT_CAMERA_TARGET);
   // Narrower than model-viewer's 30deg default — flattens perspective
   // distortion for a cleaner architectural look.
   viewer.setAttribute("field-of-view", "20deg");
@@ -356,6 +369,12 @@ function createViewer(stage) {
       if (arUsingSimpleModel) {
         viewer.src = withVersion(stageAt(currentStage).glb);
         arUsingSimpleModel = false;
+        // The AR model's real-world (~1.8m) scale is wildly different from
+        // the website model's own — re-apply the tuned camera explicitly
+        // rather than leaving whatever model-viewer settled on while the
+        // AR model was briefly loaded (see DEFAULT_CAMERA_ORBIT above).
+        viewer.cameraOrbit = DEFAULT_CAMERA_ORBIT;
+        viewer.cameraTarget = DEFAULT_CAMERA_TARGET;
       }
       if (arPaused) {
         arPaused = false;
@@ -387,34 +406,29 @@ function createViewer(stage) {
   // our own clearly-labeled button. Deliberately NOT using slot="ar-button" —
   // that slot auto-wires a click straight to activateAR(), which would launch
   // Scene Viewer/WebXR with whatever `src` the inline view currently has
-  // (the full-detail model). Instead this button swaps `src` to the stage's
-  // simpler arGlb first (if provided), then calls activateAR() itself once
-  // that's loaded, so Android/WebXR AR shows the simple model instead of the
-  // one on screen. Quick Look on iOS is unaffected either way since it reads
-  // ios-src directly, never `src`. Positioning is unaffected by leaving the
-  // named slot — `.ar-button`'s own `position: absolute` (styles.css) already
-  // does the placement, not the slot.
+  // (the full-detail model). Instead this button points `src` at the stage's
+  // simpler arGlb first (if provided) so Android/WebXR AR shows the simple
+  // model instead of the one on screen. Quick Look on iOS is unaffected
+  // either way since it reads ios-src directly, never `src`. Positioning is
+  // unaffected by leaving the named slot — `.ar-button`'s own
+  // `position: absolute` (styles.css) already does the placement, not the slot.
   const arButton = document.createElement("button");
   arButton.className = "ar-button";
   arButton.textContent = "View in Your Space";
   arButton.addEventListener("click", () => {
     const stageNow = stageAt(currentStage);
-    if (!stageNow.arGlb) {
-      viewer.activateAR();
-      return;
+    if (stageNow.arGlb) {
+      arUsingSimpleModel = true;
+      viewer.src = withVersion(stageNow.arGlb);
     }
-    arUsingSimpleModel = true;
-    // Falls back to launching AR even if arGlb fails to load (e.g. not
-    // dropped into ARmodels/ yet) rather than leaving the button dead —
-    // same "degrade gracefully" spirit as the rest of the stage handling.
-    const launch = () => {
-      viewer.removeEventListener("load", launch);
-      viewer.removeEventListener("error", launch);
-      viewer.activateAR();
-    };
-    viewer.addEventListener("load", launch);
-    viewer.addEventListener("error", launch);
-    viewer.src = withVersion(stageNow.arGlb);
+    // activateAR() is called immediately rather than waiting for the arGlb
+    // swap above to finish loading — Quick Look (iOS) never reads `src` at
+    // all, and Scene Viewer (Android) only needs it as a URL string handed
+    // to a separate native app that downloads the file itself, so neither
+    // needs it pre-loaded into this page's own scene first. Waiting on a
+    // "load" event here used to add a multi-second delay before AR could
+    // even open, worst of all on iOS where the wait bought nothing.
+    viewer.activateAR();
   });
   viewer.appendChild(arButton);
 
