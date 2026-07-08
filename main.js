@@ -82,6 +82,12 @@ function capitalize(str) {
    the full-screen name entry and the compact in-phone reply keyboard. */
 const KEYBOARD_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"].map((row) => row.split(""));
 
+// Android Chrome only — iOS Safari has never implemented the Vibration API
+// (no workaround), so this silently no-ops there rather than erroring.
+function vibrate(pattern) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
 function buildKeyboard(container, { onChar, onBackspace }) {
   container.innerHTML = "";
   KEYBOARD_ROWS.forEach((row) => {
@@ -92,7 +98,10 @@ function buildKeyboard(container, { onChar, onBackspace }) {
       key.type = "button";
       key.className = "key";
       key.textContent = ch;
-      key.addEventListener("click", () => onChar(ch.toLowerCase()));
+      key.addEventListener("click", () => {
+        vibrate(10);
+        onChar(ch.toLowerCase());
+      });
       rowEl.appendChild(key);
     });
     container.appendChild(rowEl);
@@ -104,7 +113,10 @@ function buildKeyboard(container, { onChar, onBackspace }) {
   spaceKey.type = "button";
   spaceKey.className = "key key-space";
   spaceKey.textContent = "Space";
-  spaceKey.addEventListener("click", () => onChar(" "));
+  spaceKey.addEventListener("click", () => {
+    vibrate(10);
+    onChar(" ");
+  });
   const backspaceKey = document.createElement("button");
   backspaceKey.type = "button";
   backspaceKey.className = "key key-backspace";
@@ -1246,6 +1258,7 @@ function handleLevelPopup(entry) {
     captionText.textContent = entry.text;
     positionLevelCaption(anchorRow);
     caption.classList.add("show");
+    vibrate(40);
 
     // Dismissal is tap-only, so the visitor can still scroll the chat
     // underneath the card while it's showing — keep it pinned level with
