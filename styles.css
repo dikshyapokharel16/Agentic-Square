@@ -100,6 +100,15 @@ model-viewer {
   left: 24px;
 }
 
+/* Hidden while an AR session is actually active (see the ar-status listener
+   in createViewer) — in-page WebXR renders the live camera view in this
+   same DOM/canvas, so without this the button stayed visibly overlaid on
+   top of the AR view itself instead of disappearing like it should once
+   AR has actually taken over. */
+.ar-button.hidden {
+  display: none;
+}
+
 .progress-bar {
   position: absolute;
   top: 0;

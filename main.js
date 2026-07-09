@@ -163,10 +163,10 @@ function buildFurnitureArViewers() {
     const el = document.createElement("model-viewer");
     el.className = "furniture-ar-viewer";
     el.setAttribute("ar", "");
-    // scene-viewer before webxr — see the matching comment on the square
-    // viewer's own createViewer() for why (WebXR's placement can land far
-    // from the visitor, needing a lot of manual dragging to fix).
-    el.setAttribute("ar-modes", "scene-viewer webxr quick-look");
+    // REVERTED (see matching comment on the square viewer's own
+    // createViewer()) — scene-viewer-first broke AR launching entirely on
+    // the device it was tested on.
+    el.setAttribute("ar-modes", "webxr scene-viewer quick-look");
     if (item.arGlb) el.setAttribute("src", withVersion(item.arGlb));
     if (item.arUsdz) el.setAttribute("ios-src", withVersion(item.arUsdz));
     // Assigning anything to the ar-button slot replaces model-viewer's own
@@ -443,17 +443,14 @@ function createViewer(stage) {
   if (stage.poster) viewer.setAttribute("poster", withVersion(stage.poster));
   viewer.setAttribute("alt", `${stage.name || "3D model"} — preview`);
   viewer.setAttribute("ar", "");
-  // scene-viewer before webxr: model-viewer's own in-page WebXR placement
-  // has a documented issue where the object can land far from the visitor
-  // (it bases initial placement on camera position, not a close hit-test),
-  // needing a lot of manual dragging to pull a ~1.8m model into a
-  // reasonable view — reported as "looks tiny/far away at first AR load,
-  // takes a lot of effort to fix" on Android, same on every stage
-  // regardless of Draco encoding, ruling out a file-level scale bug.
-  // Scene Viewer is Google's own separate, mature native AR app with much
-  // more reliable placement, and quick-look (iOS) is unaffected either way
-  // since Android never uses it and iOS always reads ios-src directly.
-  viewer.setAttribute("ar-modes", "scene-viewer webxr quick-look");
+  // REVERTED: tried "scene-viewer webxr quick-look" here to work around a
+  // documented WebXR placement-distance issue, but on the device it was
+  // tested on that made things worse — AR stopped launching at all (the
+  // inline viewer was left showing the tiny arGlb model instead), so
+  // Scene Viewer's intent likely isn't reliably available there. Back to
+  // the original, previously-working order until this is understood
+  // better rather than trading one failure mode for a worse one.
+  viewer.setAttribute("ar-modes", "webxr scene-viewer quick-look");
   viewer.setAttribute("ar-scale", "fixed");
   viewer.setAttribute("ar-placement", "floor");
   viewer.setAttribute("camera-controls", "");
@@ -498,7 +495,15 @@ function createViewer(stage) {
     if (event.detail.status === "session-started") {
       arPaused = true;
       updateScrollHint();
+      // In-page WebXR renders the live camera view in this same DOM/canvas
+      // (unlike Scene Viewer/Quick Look, which hand off to a native
+      // app/overlay) — without this, our own button stayed visibly
+      // overlaid on top of the AR view itself, looking like a stray
+      // control sitting on the AR screen instead of disappearing like a
+      // real "enter AR" button should once AR has actually taken over.
+      arButton.classList.add("hidden");
     } else if (event.detail.status === "not-presenting" || event.detail.status === "failed") {
+      arButton.classList.remove("hidden");
       // "failed" (camera permission denied, tracking failure, Scene Viewer
       // intent failing to launch, etc.) is a dead end, not a transition
       // through "not-presenting" — model-viewer doesn't guarantee a
