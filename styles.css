@@ -772,23 +772,16 @@ model-viewer {
   top: -9999px;
   pointer-events: none;
   /* These viewers exist only to be triggered via .activateAR() from JS
-     (see activateFurnitureAR in main.js) — they have `ar` set with no
-     custom slot="ar-button" content, so <model-viewer> renders its own
-     default fallback AR button inside each one. The off-screen position
-     above only reliably hides absolute/relative-positioned content; if
-     that internal default button is itself position:fixed (common for
-     overlay controls), it escapes this container and renders relative to
-     the actual viewport instead — potentially right on top of the visible
-     AR panel, with a tap launching AR for that furniture piece instead of
-     the square. visibility:hidden hides shadow-DOM content and blocks hit
-     testing regardless of the descendant's own position/pointer-events,
-     unlike the position trick above; the transform establishes a
-     containing block so any fixed-position descendant is also clipped to
-     this 10x10px box instead of the viewport.
+     (see activateFurnitureAR in main.js) — plain off-screen positioning is
+     enough now that buildFurnitureArViewers() slots inert content into
+     ar-button, which stops <model-viewer> from creating its own default
+     fallback AR button at all (previously the risk this off-screen
+     position alone didn't fully cover, since that default button could be
+     position:fixed and escape it). An earlier attempt at closing that gap
+     with visibility:hidden on this element broke iOS AR Quick Look
+     instead — Safari's rel="ar" recognition is sensitive to exactly this
+     kind of DOM/visibility manipulation, so don't reintroduce it here.
   */
-  visibility: hidden;
-  transform: translateZ(0);
-  overflow: hidden;
 }
 
 #intro-overlay {

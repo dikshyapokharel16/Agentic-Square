@@ -165,6 +165,17 @@ function buildFurnitureArViewers() {
     el.setAttribute("ar-modes", "webxr scene-viewer quick-look");
     if (item.arGlb) el.setAttribute("src", withVersion(item.arGlb));
     if (item.arUsdz) el.setAttribute("ios-src", withVersion(item.arUsdz));
+    // Assigning anything to the ar-button slot replaces model-viewer's own
+    // default fallback AR button entirely (standard <slot> semantics), so
+    // it's never created at all — more robust than trying to hide it with
+    // CSS after the fact, which risked interfering with how Safari
+    // recognizes a real AR Quick Look trigger on iOS (see the
+    // .furniture-ar-viewer comment in styles.css for what that broke).
+    // This is inert filler content, not a real button — these viewers are
+    // only ever triggered via .activateAR() from JS (activateFurnitureAR).
+    const arButtonSlot = document.createElement("span");
+    arButtonSlot.slot = "ar-button";
+    el.appendChild(arButtonSlot);
     furnitureArViewers.appendChild(el);
   });
 }
