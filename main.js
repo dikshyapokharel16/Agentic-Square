@@ -385,7 +385,28 @@ waBackBtn.addEventListener("click", resetToIntro);
 // AR-readiness state hadn't caught up to the same-tick attribute change).
 function activateFurnitureAR(idx) {
   const el = furnitureArViewers.children[idx];
-  if (el) el.activateAR();
+  if (el) {
+    // .loaded is safe to check directly here (unlike the square viewer's
+    // own AR button, see createViewer) since this viewer's src is fixed
+    // from page load, never reassigned at click time — so it accurately
+    // reflects whether that unchanging src has actually finished loading.
+    // Matters for the same reason: in-page WebXR sizes initial placement
+    // off whatever's currently loaded in the scene, so activating AR
+    // before this piece's own (small, but non-zero download time) model
+    // has loaded would place it using a stale/empty bounding sphere.
+    if (el.loaded) {
+      el.activateAR();
+    } else {
+      let started = false;
+      const start = () => {
+        if (started) return;
+        started = true;
+        el.activateAR();
+      };
+      el.addEventListener("load", start, { once: true });
+      setTimeout(start, 2500);
+    }
+  }
   // Back-to-start stays hidden (see showFurnitureGallery) until the visitor
   // has tried AR on at least one piece — reveal it the moment they do.
   furnitureDoneBtn.classList.remove("hidden");
@@ -570,18 +591,43 @@ function createViewer(stage) {
   arButton.textContent = "View in Your Space";
   arButton.addEventListener("click", () => {
     const stageNow = stageAt(currentStage);
-    if (stageNow.arGlb) {
-      arUsingSimpleModel = true;
-      viewer.src = withVersion(stageNow.arGlb);
+    if (!stageNow.arGlb) {
+      viewer.activateAR();
+      return;
     }
-    // activateAR() is called immediately rather than waiting for the arGlb
-    // swap above to finish loading — Quick Look (iOS) never reads `src` at
-    // all, and Scene Viewer (Android) only needs it as a URL string handed
-    // to a separate native app that downloads the file itself, so neither
-    // needs it pre-loaded into this page's own scene first. Waiting on a
-    // "load" event here used to add a multi-second delay before AR could
-    // even open, worst of all on iOS where the wait bought nothing.
-    viewer.activateAR();
+    arUsingSimpleModel = true;
+    // Quick Look (iOS) and Scene Viewer (Android) both hand the file off to
+    // a separate native app/process that fetches it themselves, so neither
+    // needs it loaded into this page's own scene first — activateAR() used
+    // to fire immediately after setting `src`, without waiting, on that
+    // reasoning. That reasoning doesn't hold for in-page WebXR though: it
+    // renders through this same live scene, and model-viewer's own
+    // placement math (ARRenderer.placeInitially()) sizes the initial
+    // placement distance directly off *whatever model is currently loaded*
+    // — 2x its bounding-sphere radius, positioned that far in front of the
+    // camera. Firing before the small arGlb swap above finished loading
+    // left the much bigger full-detail display model's bounding sphere in
+    // effect, placing the AR model many meters from the visitor instead of
+    // ~2m in front of them — reported as "very small, takes a lot of
+    // effort to bring closer," happening on every stage since it's a
+    // timing bug, not anything about the model files themselves.
+    //
+    // Always waits on "load" (never checks .loaded beforehand — right
+    // after reassigning `src` it would still reflect the *previous* model,
+    // not the new one, since the reassignment below hasn't resolved yet).
+    // In practice this resolves almost instantly since preloadArGlb
+    // already warms the cache well before this button is ever tapped; the
+    // timeout is a safety net so AR is never blocked indefinitely if a
+    // slow/cold fetch or a missed event leaves "load" never firing.
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      viewer.activateAR();
+    };
+    viewer.addEventListener("load", start, { once: true });
+    setTimeout(start, 2500);
+    viewer.src = withVersion(stageNow.arGlb);
   });
   viewer.appendChild(arButton);
 
