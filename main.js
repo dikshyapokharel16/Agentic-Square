@@ -619,15 +619,37 @@ function createViewer(stage) {
     // already warms the cache well before this button is ever tapped; the
     // timeout is a safety net so AR is never blocked indefinitely if a
     // slow/cold fetch or a missed event leaves "load" never firing.
+    //
+    // model-viewer doesn't guard against a stale load itself — if a load
+    // from *before* this click (e.g. the stage's display model, still
+    // resolving from a story transition moments earlier) was still in
+    // flight when this click set `src` below, that earlier load could
+    // still complete and fire its own "load" event carrying its own (now
+    // superseded) URL. An unfiltered {once:true} listener would treat
+    // that as "the arGlb is ready" and activate AR while the wrong model
+    // was still the one actually in the scene — this is what was showing
+    // up as "the wrong stage's model in AR" / "only one model ever shows
+    // up". Comparing event.detail.url (normalized to an absolute URL,
+    // since model-viewer resolves `src` to one internally) against the
+    // exact URL this click requested rules that out.
+    const targetUrl = withVersion(stageNow.arGlb);
+    const targetAbsoluteUrl = new URL(targetUrl, location.href).href;
     let started = false;
     const start = () => {
       if (started) return;
       started = true;
+      viewer.removeEventListener("load", onLoad);
       viewer.activateAR();
     };
-    viewer.addEventListener("load", start, { once: true });
+    const onLoad = (event) => {
+      const loadedUrl = event.detail && event.detail.url;
+      if (loadedUrl && new URL(loadedUrl, location.href).href === targetAbsoluteUrl) {
+        start();
+      }
+    };
+    viewer.addEventListener("load", onLoad);
     setTimeout(start, 2500);
-    viewer.src = withVersion(stageNow.arGlb);
+    viewer.src = targetUrl;
   });
   viewer.appendChild(arButton);
 
