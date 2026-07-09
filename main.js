@@ -72,7 +72,7 @@ function stageAt(i) {
 // before a re-scale can keep serving the stale one for up to an hour.
 // Bump this whenever a stage's model file is regenerated so every deploy
 // forces a fresh fetch regardless of that cache.
-const MODEL_VERSION = "18";
+const MODEL_VERSION = "19";
 
 function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
@@ -382,6 +382,14 @@ function showFurnitureGallery() {
 // both lead to the same place, a clean intro screen for the next visitor.
 function hideFurnitureGallery() {
   clearTimeout(furnitureIdleTimer);
+  // The standalone furniture-only site (?furniture=1, its default landing
+  // route) has no chat/kiosk "start" to return to - resetToIntro() would
+  // reveal the full kiosk intro screen instead, background image (view.png)
+  // and all, completely out of place here. Reload for a clean slate.
+  if (new URLSearchParams(window.location.search).get("furniture") === "1") {
+    window.location.reload();
+    return;
+  }
   furnitureGallery.classList.remove("active");
   resetToIntro();
 }

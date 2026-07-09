@@ -86,6 +86,40 @@ objects), decimate it in Blender (Decimate modifier, ~0.3-0.5 ratio) *before*
 exporting to `.usdz` — reducing polygon count at the source is the only
 remaining fix.
 
+## Recentering (AR rotation pivot)
+
+SketchUp/Blender exports keep whatever origin the source scene happened to
+use — often far from the model's own visual center. `<model-viewer>`'s
+inline turntable camera auto-centers around the bounding box regardless, so
+this never shows up in the split-screen display panel — but native AR
+handoff (Android Scene Viewer, iOS Quick Look) and even model-viewer's own
+in-page WebXR AR rotate the placed model around the file's *raw local
+origin*, not its visual center. An off-center origin makes AR rotation
+gestures orbit a point that can be well outside the model.
+
+`fix-glb-scale.mjs` and `fix-usdz-scale.py` both recenter the footprint
+(X/Z for `.glb`'s Y-up convention, X/Y for `.usdz`'s — these SketchUp/Blender
+exports are Z-up, read per-file via `UsdGeom.GetStageUpAxis()` rather than
+assumed) as part of the normal pipeline now, so this is handled automatically
+for new exports. Height is deliberately left untouched — these exports
+already sit on the ground plane at zero.
+
+To fix already-processed files without redoing the whole pipeline (no raw
+export needed — this is a pure transform edit, doesn't touch mesh/texture
+data):
+
+```
+node recenter-glb.mjs <in.glb> <out.glb> [--target-longest-side=1.8]
+python recenter-usdz.py <in.usdz> <out.usdz>
+```
+
+`recenter-glb.mjs` explicitly re-applies whatever Draco method (sequential
+vs. edgebreaker) the input file already used — gltf-transform's own
+read/write round-trip doesn't preserve that choice and silently defaults to
+edgebreaker on write, which would silently undo a deliberate per-stage
+encoding choice (e.g. a stage switched to sequential to work around an
+Android decoder bug) if left unhandled.
+
 ## `.usdz` mesh deduplication (repeated objects)
 
 SketchUp/Blender exports for this project don't preserve component/instance
