@@ -169,8 +169,10 @@
   </main>
 
   <!-- AR-only, never shown inline — one per furniture piece, created and
-       given its src/ios-src once FURNITURE loads (see main.js), not at
-       click time. A click just calls .activateAR() on the matching one
+       given its src/ios-src lazily once the furniture gallery is actually
+       reached (see buildFurnitureArViewers/showFurnitureGallery in main.js),
+       not at page load and not at click time either. A click just calls
+       .activateAR() on the matching one
        with no attribute changes of its own, avoiding a same-tap race where
        model-viewer's internal AR-readiness state hasn't caught up yet to a
        src/ios-src set in that same click (which needed two taps: one to

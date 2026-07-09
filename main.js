@@ -166,10 +166,23 @@ const furnitureArViewers = document.getElementById("furnitureArViewers");
 const FURNITURE_IDLE_TIMEOUT_MS = 45000;
 let furnitureIdleTimer = null;
 
-// One hidden <model-viewer> per piece, src/ios-src set here (once FURNITURE
-// loads) rather than at click time — see the comment on #furnitureArViewers
-// in index.html for why that avoids a same-tap race that needed two taps.
+// One hidden <model-viewer> per piece, src/ios-src set here rather than at
+// click time — see the comment on #furnitureArViewers in index.html for why
+// that avoids a same-tap race that needed two taps. Built lazily (see
+// showFurnitureGallery), not at page load: each instance claims its own
+// WebGL context and starts decoding its own textures immediately once src is
+// set, and doing that for 8 pieces before a visitor has even started the
+// chat was competing for iOS Safari's fairly tight GPU/texture-memory budget
+// with the main display model — plausible cause of the main model's
+// textures intermittently rendering black/missing from a fresh page load,
+// well before AR was ever touched. Deferring this to when the gallery is
+// actually reached (the last thing in the story) still leaves a comfortable
+// gap before any piece's own AR button can be tapped, so the same-tap race
+// this was originally written to avoid doesn't come back.
+let furnitureViewersBuilt = false;
 function buildFurnitureArViewers() {
+  if (furnitureViewersBuilt) return;
+  furnitureViewersBuilt = true;
   furnitureArViewers.innerHTML = "";
   FURNITURE.forEach((item) => {
     const el = document.createElement("model-viewer");
@@ -439,6 +452,7 @@ function resetFurnitureIdleTimer() {
 }
 
 function showFurnitureGallery() {
+  buildFurnitureArViewers();
   furnitureGallery.classList.add("active");
   // Defensive: normally already hidden (a fresh visitor session never
   // reaches this screen having tried AR yet), but guarantees the next
@@ -2204,7 +2218,6 @@ Promise.all([loadJSON("stages.json"), loadJSON("messages.json"), loadJSON("furni
     RAW_MESSAGES = messages;
     MESSAGES = messages;
     FURNITURE = furniture;
-    buildFurnitureArViewers();
     firstImageIdx = MESSAGES.findIndex((m) => m.type === "image");
     LEVEL_ANCHORS = MESSAGES.filter((m) => m.type === "level").map((m) => m.anchorIndex);
     // A separate QR code (e.g. a standalone sign near the furniture, not
