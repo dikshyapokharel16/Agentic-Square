@@ -457,7 +457,16 @@ function createViewer(stage) {
     if (event.detail.status === "session-started") {
       arPaused = true;
       updateScrollHint();
-    } else if (event.detail.status === "not-presenting") {
+    } else if (event.detail.status === "not-presenting" || event.detail.status === "failed") {
+      // "failed" (camera permission denied, tracking failure, Scene Viewer
+      // intent failing to launch, etc.) is a dead end, not a transition
+      // through "not-presenting" — model-viewer doesn't guarantee a
+      // follow-up "not-presenting" event after it. Without handling it here
+      // too, a failed AR launch left `src` permanently stuck on the
+      // lightweight arGlb (set by the AR button handler below) instead of
+      // reverting to the full-detail website model, since the swap-back
+      // below never ran.
+      //
       // Scene Viewer (Android) and in-page WebXR both launch AR using
       // whatever `src` is currently set — there's no separate Android-only
       // AR attribute in model-viewer, unlike ios-src for Quick Look. So the
