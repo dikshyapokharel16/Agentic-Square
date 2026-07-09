@@ -257,6 +257,7 @@ model-viewer {
 
 .waheader .avatar.av-icon {
   background: #008069;
+  border: 1px solid #fff;
 }
 
 .waheader .avatar.av-icon i {
@@ -1015,6 +1016,91 @@ model-viewer {
   background: #d8d8d8;
 }
 
+/* ---------- story chapter progress (over the AR area, see positionStoryProgress) ---------- */
+.story-progress {
+  /* Same vw-based clamp() scale already used for small phone-UI labels
+     (e.g. .waheader .title) — reused here so the bar scales with screen
+     size like the rest of the kiosk, since the final exhibition tablet
+     isn't chosen yet. Referenced below via calc() so the track/circles/
+     font all stay proportional to each other off one shared value. */
+  --step-size: clamp(22px, 2.2vw, 32px);
+  position: absolute;
+  /* left/top/width are set from JS (positionStoryProgress) so it can stay
+     centered on the AR area's actual visible width — the space left of the
+     floating phone panel, not the full split-screen width — same reasoning
+     as centerViewerAroundVisibleArea/positionArCaption above it. These are
+     just a sane fallback before that first measurement runs. */
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease;
+}
+
+.story-progress.show {
+  opacity: 1;
+}
+
+.story-progress-steps {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.story-progress-track {
+  position: absolute;
+  left: calc(var(--step-size) / 2);
+  right: calc(var(--step-size) / 2);
+  top: calc(var(--step-size) / 2);
+  height: clamp(2px, .25vw, 4px);
+  background: rgba(17, 17, 17, .15);
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.story-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: var(--accent-green);
+  border-radius: 2px;
+  transition: width .25s linear;
+}
+
+.story-progress-step {
+  width: var(--step-size);
+  height: var(--step-size);
+  border-radius: 50%;
+  background: #fff;
+  border: clamp(1.5px, .15vw, 2.5px) solid rgba(17, 17, 17, .18);
+  color: rgba(17, 17, 17, .4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(10px, 1vw, 14px);
+  font-weight: 700;
+  transition: background .25s ease, border-color .25s ease, color .25s ease;
+}
+
+.story-progress-step.current {
+  border-color: var(--accent-green);
+  color: var(--accent-green-dark);
+  background: #fff;
+}
+
+.story-progress-step.complete {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+  color: #fff;
+}
+
 /* ---------- AR-panel caption bubble (nudge / skip / timeout) ---------- */
 .ar-caption {
   position: absolute;
@@ -1076,21 +1162,27 @@ model-viewer {
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
-  padding: 0;
+  /* Padding + matching negative margin grows the tappable box on a
+     touchscreen well past the underlined word itself, without shifting
+     where the text visually sits — a near-miss tap used to land on the
+     caption behind it instead, which reopens the choice/reply options
+     since that's the caption's own "answer this" tap target. */
+  padding: 12px 10px;
+  margin: -12px -10px -12px 0;
 }
 
 /* Level pop-up: same .ar-caption bubble as the reply prompt above, just
    swapped into "level-mode" — a title row replaces the prompt's own
-   sentence-first layout, and the tap-to-reply/skip row is replaced with a
-   plain tap hint, since a level card isn't answerable, just dismissible
-   by tapping the card itself (see handleLevelPopup in main.js). */
+   sentence-first layout, and the tap-to-reply/skip row is hidden entirely,
+   since a level card (EXPERIMENTAL, see #levelPinTemplate in index.html and
+   handleLevelPopup in main.js) is now purely informational/passive — it
+   just appears and stays pinned in place, no tap interaction at all. */
 .ar-caption-level { display: none; align-items: baseline; gap: 8px; margin-bottom: 6px; }
 /* Narrower than the reply prompt's own box — sitting closer to the phone
    (see positionLevelCaption) left less room before the avatar column, so
    the text wraps over more lines instead. */
-.ar-caption.level-mode { cursor: pointer; max-width: min(290px, 27vw); }
+.ar-caption.level-mode { cursor: default; pointer-events: none; max-width: min(290px, 27vw); }
 .ar-caption.level-mode .ar-caption-level { display: flex; }
-.ar-caption.level-mode .ar-caption-actions { display: none; }
 
 .ar-caption-level-num {
   font-size: 10.5px;
@@ -1103,18 +1195,22 @@ model-viewer {
 
 .ar-caption-level-title { font-size: 16px; font-weight: 700; color: #111; }
 
-.ar-caption-tap-hint {
-  display: none;
-  align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--accent-green-dark);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
+/* Mobile stacked layout (see the (max-width: 700px) block near the top of
+   this file): the 34vw/27vw caps above assume a wide kiosk viewport where
+   a slice of it is still comfortably wide — on an actual ~390px phone
+   viewport they collapse to ~130px/~105px, squeezing the caption text into
+   a tall stack of narrow-wrapped lines that overflows the much shorter
+   stacked AR panel above it. Widen both to a comfortable fraction of the
+   (now much narrower) viewport instead. */
+@media (max-width: 700px) {
+  .ar-caption {
+    max-width: min(320px, 82vw);
+  }
 
-.ar-caption.level-mode .ar-caption-tap-hint { display: flex; }
+  .ar-caption.level-mode {
+    max-width: min(300px, 82vw);
+  }
+}
 
 /* ---------- in-phone reply keyboard (slides up from below, like a real phone) ---------- */
 .reply-keyboard {
