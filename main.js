@@ -16,6 +16,7 @@ let storyFinished = false;
 let scrubbing = false; // scrolled away from the live bottom, previewing an earlier stage
 let scrubStage = -1; // stage currently previewed while scrubbing, -1 when not scrubbing
 let lightboxOpen = false; // an enlarged chat image is showing
+let fastForwardNextTyping = false; // consumed once by whichever typing beat comes next — see nextTypingDuration
 let firstImageIdx = -1; // computed once MESSAGES loads — see init
 let LEVEL_ANCHORS = []; // anchorIndex of each type:"level" entry, in script order — computed once MESSAGES loads, see init
 
@@ -320,6 +321,7 @@ function startExperience(name) {
   scrubStage = -1;
   lightboxOpen = false;
   pendingLevelEntry = null;
+  resetLevelPin();
   // Defensive: normally already empty (the end-of-story reset clears it),
   // but guarantees a clean slate regardless of how chatbody got into
   // whatever state it was in before this particular start.
@@ -337,6 +339,7 @@ function resetToIntro() {
   scrubStage = -1;
   lightboxOpen = false;
   pendingLevelEntry = null;
+  resetLevelPin();
   POLL_STATE = {};
   activePollIndex = null;
   currentStage = 0;
@@ -735,16 +738,81 @@ function positionArCaption() {
   caption.style.bottom = `${Math.max(24, window.innerHeight - phoneRect.bottom + 64)}px`;
 }
 
-// Set while a level pop-up is showing (see handleLevelPopup) so a resize
-// mid-display repositions it against its own anchor row instead of falling
-// back to the reply-prompt's fixed spot.
-let activeLevelAnchorRow = null;
+// Each level pop-up gets its own cloned card (see handleLevelPopup) instead
+// of one reused element — { el, anchorRow, reposition } per card still
+// tracked, in the order they appeared, so a resize repositions all of them
+// (not just the newest) and resetLevelPin can tear all of them down.
+let activeLevelCards = [];
 
 window.addEventListener("resize", () => {
-  if (activeLevelAnchorRow) positionLevelCaption(activeLevelAnchorRow);
-  else positionArCaption();
+  positionArCaption();
+  activeLevelCards.forEach(({ el, anchorRow }) => positionLevelCaption(el, anchorRow));
+  updateLevelCardVisibility();
 });
 positionArCaption();
+
+// Removes every still-tracked level card and its scroll listener — called
+// at the start of a fresh visitor's session so a previous visitor's pinned
+// cards don't carry over (see startExperience/resetToIntro). Cards are
+// still fully torn down here (unlike updateLevelCardVisibility's mid-session
+// show/hide toggling) since a new session has nothing to scroll back to.
+function resetLevelPin() {
+  activeLevelCards.forEach(({ el, anchorRow, reposition }) => {
+    if (anchorRow) chatbody().removeEventListener("scroll", reposition);
+    el.remove();
+  });
+  activeLevelCards = [];
+}
+
+// The fixed floor a pinned level card's top can never rise above — see
+// positionLevelCaption. Pulled out so updateLevelCardVisibility can check
+// the same value without recomputing its own (possibly-drifted) copy.
+function levelPinFloorTop() {
+  const headerRect = document.querySelector(".waheader")?.getBoundingClientRect();
+  return Math.max(16, (headerRect ? headerRect.bottom : 0) + 16);
+}
+
+// Once a *later* level's card has scrolled up far enough to visually
+// overlap whichever earlier card is already sitting at (or near) the
+// pinned floor, that earlier card is hidden (not removed: scrolling back
+// up moves the later card back down and off it again, which brings the
+// earlier one right back, same as the visitor would expect flipping back
+// through physical chapter markers). Re-evaluated from scratch on every
+// scroll/resize, so it naturally runs in reverse too — nothing here assumes
+// forward-only progress. Checks actual bounding-rect overlap rather than
+// each card's top exactly equalling the floor value — two independently
+// computed getBoundingClientRect() calls can differ by a hair even when
+// both are visually pinned at the same spot, which made an exact-equality
+// check flicker on real (not synthetic, single-jump) scroll input instead
+// of cleanly replacing. Keeps only the most recently created card among any
+// group currently overlapping visible; every other one just gets its own
+// "show" toggled instead of being torn down.
+
+// A card whose own bottom edge has reached the visible *chat area*'s bottom
+// edge (the phone's own screen, not the whole page — the phone floats in
+// the middle of a much taller viewport, so comparing against window height
+// would essentially never trigger) hides right there, rather than sliding
+// any further down and off — positionLevelCaption's now-top-only clamp
+// would otherwise let it follow its row all the way down past the visible
+// area with nothing stopping it, clipping out through the bottom edge
+// instead of disappearing cleanly at it.
+function isCardPastChatBottom(card) {
+  const cardRect = card.el.getBoundingClientRect();
+  const chatRect = chatbody().getBoundingClientRect();
+  return cardRect.bottom >= chatRect.bottom;
+}
+
+function updateLevelCardVisibility() {
+  const overlaps = (a, b) => a.top < b.bottom && a.bottom > b.top;
+  activeLevelCards.forEach((card, i) => {
+    const rect = card.el.getBoundingClientRect();
+    const coveredByLater = activeLevelCards
+      .slice(i + 1)
+      .some((later) => overlaps(rect, later.el.getBoundingClientRect()));
+    const pastBottom = isCardPastChatBottom(card);
+    card.el.classList.toggle("show", !coveredByLater && !pastBottom);
+  });
+}
 
 // Every rendered chat row is tagged with its MESSAGES array index (see
 // renderEntry) so a level pop-up can be pinned to a specific already-
@@ -756,18 +824,13 @@ function findRowByIndex(idx) {
 // Same horizontal tuck as positionArCaption, but the vertical offset
 // tracks a specific chat row's on-screen height instead of always sitting
 // near the phone's bottom edge — used by level pop-ups that declare an
-// entry.anchorIndex. Falls back to positionArCaption's fixed spot if the
+// entry.anchorIndex. Falls back to a fixed spot below the header if the
 // anchor row isn't found (e.g. anchorIndex omitted, or not yet rendered).
 // Pulled in further than positionArCaption's own tuck: at that anchor
 // height a full 36px reaches past the chat's left padding and into the
 // avatar column, covering it. A card can land at any row (not just a
 // fixed bottom spot), so it needs the extra clearance every time.
-function positionLevelCaption(anchorRow) {
-  if (!anchorRow) {
-    positionArCaption();
-    return;
-  }
-  const caption = document.getElementById("arCaption");
+function positionLevelCaption(caption, anchorRow) {
   const phone = document.querySelector(".phone-wrap");
   if (!caption || !phone) return;
   const phoneRect = phone.getBoundingClientRect();
@@ -775,13 +838,34 @@ function positionLevelCaption(anchorRow) {
   caption.style.left = "auto";
   caption.style.right = `${Math.max(8, window.innerWidth - phoneRect.left - overlap)}px`;
 
+  // A pinned card can end up riding all the way to this floor once its
+  // anchor row scrolls far enough out of view — keep that floor below the
+  // phone's own green WhatsApp-style header bar rather than the plain 16px
+  // viewport-top margin used elsewhere, so a long-pinned card never rises
+  // past/behind it (this is also what lets a later level's card visually
+  // scroll up and cover an earlier, still-pinned one at that same floor —
+  // see updateLevelCardVisibility, which hides the covered one accordingly).
+  const minTop = levelPinFloorTop();
+
+  // No anchorIndex (rare — entry.anchorIndex omitted): sit near the top
+  // rather than reusing positionArCaption's spot, which belongs solely to
+  // the separate reply-prompt element (#arCaption).
+  if (!anchorRow) {
+    caption.style.bottom = "auto";
+    caption.style.top = `${minTop}px`;
+    return;
+  }
+
   const rowRect = anchorRow.getBoundingClientRect();
   const centerY = rowRect.top + rowRect.height / 2;
   const captionHeight = caption.offsetHeight;
-  const top = Math.min(
-    Math.max(16, centerY - captionHeight / 2),
-    window.innerHeight - captionHeight - 16
-  );
+  // Only clamped at the top (the pinned floor) — deliberately *not* also
+  // clamped at the bottom. A bottom clamp would hold the card stuck at the
+  // screen's bottom edge once its anchor row scrolls back down out of view
+  // while scrolling back through history, instead of letting it disappear
+  // there (see updateLevelCardVisibility's off-screen check) the same way
+  // it wasn't shown yet before the visitor had scrolled forward that far.
+  const top = Math.max(minTop, centerY - captionHeight / 2);
   caption.style.bottom = "auto";
   caption.style.top = `${top}px`;
 }
@@ -1157,6 +1241,22 @@ function typingDuration(entry, inIntro) {
   return p.typingBase + wordCount(entry) * p.perWord;
 }
 
+// Consumed once by whichever typing beat comes next — set whenever a
+// userPrompt resolves (see handleUserPrompt's finish/finishChoice),
+// regardless of path (Skip, a choice with no reply defined, a keyword
+// fallback, etc.), so the transition back into the story never sits
+// through a long word-count-scaled pause right after a visitor's own
+// interaction — right there, it reads as the app stalling rather than
+// pacing, even though the exact same duration is unremarkable mid-story.
+function nextTypingDuration(entry, inIntro) {
+  const full = pacedDuration(typingDuration(entry, inIntro));
+  if (fastForwardNextTyping) {
+    fastForwardNextTyping = false;
+    return Math.min(full, 900);
+  }
+  return full;
+}
+
 /* ---------- in-story reply prompt ----------
    Pauses playback, nudges the visitor via a caption bubble over the AR
    panel (styled like a narrative caption, not a chat bubble — it's "the
@@ -1210,8 +1310,10 @@ function handleUserPrompt(entry) {
     // Renders Marktplatz's follow-up (if any) after a typing beat, then
     // resolves — shared by both the choice and keyword-bucket paths so the
     // reply always appears as part of the same interaction, not gated
-    // behind a further scroll.
-    async function settleWithReply(reply, { fast = false } = {}) {
+    // behind a further scroll. Duration goes through nextTypingDuration, so
+    // it's fast-forwarded whenever finish/finishChoice just set that flag —
+    // which is every resolution path, not just Skip (see their own comments).
+    async function settleWithReply(reply) {
       if (reply) {
         const replyEntry = {
           type: "msg",
@@ -1223,13 +1325,7 @@ function handleUserPrompt(entry) {
           fg: "#fbe7ea",
           initial: "L",
         };
-        // Skip's follow-up (fast: true) still gets a brief typing beat for
-        // consistency, but not the full word-count-scaled duration used
-        // elsewhere — a visitor who just tapped Skip has already signaled
-        // they're not lingering, so waiting out a ~6s "typing" pause for a
-        // long skipReply sentence read as the app stalling, not thinking.
-        const duration = fast ? Math.min(pacedDuration(typingDuration(replyEntry, false)), 900) : pacedDuration(typingDuration(replyEntry, false));
-        await showTyping(replyEntry, duration);
+        await showTyping(replyEntry, nextTypingDuration(replyEntry, false));
         renderEntry(revealIdx, replyEntry);
       }
       resolve();
@@ -1238,6 +1334,13 @@ function handleUserPrompt(entry) {
     function finish(text) {
       if (settled) return;
       settled = true;
+      // A visitor who just resolved a prompt (Skip, a plain typed reply, a
+      // keyword match/fallback) has signaled they're done with it — whatever
+      // typing beat comes next (this reply, or otherwise the next entry in
+      // the script once revealNext continues) shouldn't sit through the
+      // full word-count-scaled pause used mid-story, or it reads as the app
+      // stalling right when the visitor is waiting for a response.
+      fastForwardNextTyping = true;
       caption.classList.remove("show");
       replyKeyboard.classList.remove("show");
       caption.onclick = null;
@@ -1253,7 +1356,7 @@ function handleUserPrompt(entry) {
         // Skip (no text at all) still gets a Marktplatz follow-up if the
         // entry defines one — distinct from fallbackReply, which only fires
         // once the visitor has actually typed something that matched no bucket.
-        settleWithReply(entry.skipReply, { fast: true });
+        settleWithReply(entry.skipReply);
         return;
       }
       resolve();
@@ -1262,6 +1365,9 @@ function handleUserPrompt(entry) {
     function finishChoice(option) {
       if (settled) return;
       settled = true;
+      // See the matching comment in finish() — applies just the same to a
+      // tapped choice, reply or not (e.g. an option with no reply defined).
+      fastForwardNextTyping = true;
       caption.classList.remove("show");
       replyKeyboard.classList.remove("show");
       caption.onclick = null;
@@ -1318,68 +1424,61 @@ function handleUserPrompt(entry) {
 }
 
 /* ---------- in-story level pop-up ----------
-   Reuses the exact same caption bubble as the reply prompt above (styled
-   like a narrative caption "over the AR panel", not a chat bubble) rather
-   than a separate in-chat element — .level-mode on #arCaption swaps in the
-   level number/title and hides the tap-to-reply/skip row, since a level
-   card is purely informational. Dismissed the same way the reply prompt's
-   own caption is opened: a tap anywhere on the card. entry.anchorIndex, if
-   set, pins the card's height to that already-revealed message's row
-   instead of the default fixed spot (see positionLevelCaption). */
+   EXPERIMENTAL (2026-07-10, per Mareike's Betreuer, not yet decided on):
+   each level gets its own cloned card (from #levelPinTemplate, same
+   .ar-caption/.level-mode visuals as #arCaption below), purely passive —
+   no tap interaction, doesn't pause the story (revealNext just fires this
+   and keeps going). It appears in sync with its anchor row and stays
+   pinned in place as the chat keeps scrolling, while a *later* level's card
+   is a separate instance tracking its own (lower, not-yet-scrolled-past)
+   anchor row. Both stay visible until further scrolling carries the newer
+   one up far enough to reach the shared pinned-floor position (see
+   positionLevelCaption) and visually cover the older one — at that point
+   updateLevelCardVisibility hides the now-covered card, and un-hides it
+   again if the visitor scrolls back down past that point, so scrolling
+   back through the story shows the level cards in reverse too, not just
+   forward. entry.anchorIndex, if set, pins the card's height to that
+   already-revealed message's row instead of the default fixed spot. */
 function handleLevelPopup(entry) {
-  return new Promise((resolve) => {
-    const caption = document.getElementById("arCaption");
-    const captionText = document.getElementById("arCaptionText");
-    const captionLevelNum = document.getElementById("arCaptionLevelNum");
-    const captionLevelTitle = document.getElementById("arCaptionLevelTitle");
+  const template = document.getElementById("levelPinTemplate");
+  const caption = template.content.firstElementChild.cloneNode(true);
+  document.getElementById("ar-panel").appendChild(caption);
+  const captionText = caption.querySelector(".level-pin-text");
+  const captionLevelNum = caption.querySelector(".level-pin-num");
+  const captionLevelTitle = caption.querySelector(".level-pin-title");
 
-    const anchorRow = entry.anchorIndex != null ? findRowByIndex(entry.anchorIndex) : null;
+  const anchorRow = entry.anchorIndex != null ? findRowByIndex(entry.anchorIndex) : null;
 
-    updatePhoneClock(entry);
-    caption.classList.add("level-mode");
-    captionLevelNum.textContent = `Level ${entry.level}`;
-    captionLevelTitle.textContent = entry.title;
-    captionText.textContent = entry.text;
-    positionLevelCaption(anchorRow);
-    caption.classList.add("show");
-    vibrate(40);
-    // Jump the progress bar to this chapter the moment the card appears,
-    // not only once it's dismissed — revealIdx is already past this
-    // level's anchorIndex by now (incremented in revealNext before this
-    // popup is awaited), so the default (no-arg) call already reflects it.
-    updateStoryProgress();
+  updatePhoneClock(entry);
+  captionLevelNum.textContent = `Level ${entry.level}`;
+  captionLevelTitle.textContent = entry.title;
+  captionText.textContent = entry.text;
+  positionLevelCaption(caption, anchorRow);
+  caption.classList.add("show");
+  vibrate(40);
+  // Jump the progress bar to this chapter the moment the card appears —
+  // revealIdx is already past this level's anchorIndex by now (incremented
+  // in revealNext just before this runs), so the default (no-arg) call
+  // already reflects it.
+  updateStoryProgress();
 
-    // Dismissal is tap-only, so the visitor can still scroll the chat
-    // underneath the card while it's showing — keep it pinned level with
-    // its anchor row as that happens, instead of leaving it stranded at
-    // the height the row happened to be at the moment the card appeared.
-    activeLevelAnchorRow = anchorRow;
-    let repositionQueued = false;
-    const reposition = () => {
-      if (repositionQueued) return;
-      repositionQueued = true;
-      requestAnimationFrame(() => {
-        repositionQueued = false;
-        positionLevelCaption(anchorRow);
-      });
-    };
-    if (anchorRow) chatbody().addEventListener("scroll", reposition, { passive: true });
-
-    caption.onclick = () => {
-      caption.onclick = null;
-      if (anchorRow) chatbody().removeEventListener("scroll", reposition);
-      activeLevelAnchorRow = null;
-      // Only "show" — the box still fades out over .3s (see .ar-caption's
-      // transition), and dropping "level-mode" right away instantly swaps
-      // the still-visible box from its title layout to the reply-prompt's
-      // tap-to-reply/skip layout for that whole fade, flashing the same
-      // text without the level title. Whichever handler shows the caption
-      // next (handleUserPrompt/handleLevelPopup) already sets level-mode
-      // correctly before it does, so there's nothing to clean up here.
-      caption.classList.remove("show");
-      resolve();
-    };
-  });
+  // The visitor keeps scrolling the chat underneath the card as it's
+  // pinned (forward or back) — keep it level with its anchor row as that
+  // happens, instead of leaving it stranded at the height the row happened
+  // to be at when the card first appeared.
+  let repositionQueued = false;
+  const reposition = () => {
+    if (repositionQueued) return;
+    repositionQueued = true;
+    requestAnimationFrame(() => {
+      repositionQueued = false;
+      positionLevelCaption(caption, anchorRow);
+      updateLevelCardVisibility();
+    });
+  };
+  if (anchorRow) chatbody().addEventListener("scroll", reposition, { passive: true });
+  activeLevelCards.push({ el: caption, anchorRow, reposition });
+  updateLevelCardVisibility();
 }
 
 /* ---------- playback: scroll-revealed story ----------
@@ -1480,7 +1579,7 @@ async function revealPlainEntry(idx, entry, inIntro) {
     renderEntry(idx, entry);
     await waitOrSkip(pacedDuration(inIntro ? PACE.introShortPause : PACE.shortPause));
   } else {
-    await showTyping(entry, pacedDuration(typingDuration(entry, inIntro)));
+    await showTyping(entry, nextTypingDuration(entry, inIntro));
     renderEntry(idx, entry);
   }
 }
@@ -1496,6 +1595,14 @@ async function revealNext() {
     await sleep(PACE.fadeOut);
     chatbody().classList.remove("fade-out");
     chatbody().innerHTML = "";
+    // Level cards track anchor rows that just got wiped out above — without
+    // this, a still-pinned card (e.g. the last level reached) keeps its
+    // scroll/resize listeners live against a now-detached row for as long as
+    // the furniture gallery is up (up to FURNITURE_IDLE_TIMEOUT_MS), and any
+    // reposition in the meantime computes a bogus position from that
+    // detached row's now-zeroed bounding rect — visible as the card jumping
+    // to some other spot before the next visitor's session even starts.
+    resetLevelPin();
     // Each playthrough is one visitor's session, so this doesn't silently
     // loop back to the intro and hand the next person the previous
     // visitor's name — instead it shows the furniture AR gallery first;
@@ -1541,7 +1648,7 @@ async function revealNext() {
   if (pendingLevelEntry && pendingLevelEntry.anchorIndex === revealedIdx) {
     const levelEntry = pendingLevelEntry;
     pendingLevelEntry = null;
-    await handleLevelPopup(levelEntry);
+    handleLevelPopup(levelEntry); // no longer pauses the story — see its own comment
   }
 
   revealing = false;

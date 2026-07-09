@@ -76,17 +76,34 @@
           <div class="story-progress-step" data-level="6">6</div>
         </div>
       </div>
-      <div class="ar-caption" id="arCaption">
-        <div class="ar-caption-level" id="arCaptionLevel">
-          <span class="ar-caption-level-num" id="arCaptionLevelNum"></span>
-          <span class="ar-caption-level-title" id="arCaptionLevelTitle"></span>
+      <!-- EXPERIMENTAL (2026-07-10, per Mareike's Betreuer's request, not yet
+           decided on): each level pop-up gets its own cloned instance of this
+           template (see handleLevelPopup in main.js) rather than one reused
+           element — purely passive/informational now (no tap interaction,
+           doesn't pause the story), it just appears in sync with its anchor
+           message and stays pinned in place as the chat keeps scrolling; the
+           next level's card is a separate element tracking its own (lower)
+           anchor row, so both are visible until scrolling carries the new
+           one up far enough to visually cover (and then remove, see
+           pruneCoveredLevelCards) the old one. Kept separate from #arCaption
+           below (the reply-prompt element) because a userPrompt can appear
+           between two levels (e.g. right after Level 1) and would otherwise
+           hijack the same box mid-pin. -->
+      <template id="levelPinTemplate">
+        <div class="ar-caption level-mode">
+          <div class="ar-caption-level">
+            <span class="ar-caption-level-num level-pin-num"></span>
+            <span class="ar-caption-level-title level-pin-title"></span>
+          </div>
+          <p class="ar-caption-text level-pin-text"></p>
         </div>
+      </template>
+      <div class="ar-caption" id="arCaption">
         <p class="ar-caption-text" id="arCaptionText"></p>
         <div class="ar-caption-actions" id="arCaptionActions">
           <span class="ar-caption-hint">Tap to reply</span>
           <button class="ar-caption-skip" id="arCaptionSkip">Skip</button>
         </div>
-        <div class="ar-caption-tap-hint" id="arCaptionTapHint"><i class="ti ti-hand-click"></i><span>Click to continue</span></div>
       </div>
     </section>
 
