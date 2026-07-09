@@ -382,6 +382,14 @@ function showFurnitureGallery() {
 // both lead to the same place, a clean intro screen for the next visitor.
 function hideFurnitureGallery() {
   clearTimeout(furnitureIdleTimer);
+  // The standalone furniture-only site (?furniture=1, its default landing
+  // route) has no chat/kiosk "start" to return to - resetToIntro() would
+  // reveal the full kiosk intro screen instead, background image (view.png)
+  // and all, completely out of place here. Reload for a clean slate.
+  if (new URLSearchParams(window.location.search).get("furniture") === "1") {
+    window.location.reload();
+    return;
+  }
   furnitureGallery.classList.remove("active");
   resetToIntro();
 }

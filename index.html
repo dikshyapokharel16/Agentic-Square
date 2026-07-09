@@ -29,6 +29,19 @@
     </section>
   </div>
 
+  <!-- Runs synchronously, right after #intro-overlay's own markup, so a
+       ?furniture=1 landing (the standalone furniture site's default route)
+       never paints the intro screen at all - main.js's own
+       introOverlay.classList.add("hidden") doesn't run until after
+       stages.json/messages.json/furniture.json have all loaded, which was
+       long enough for the intro's full-bleed "view.png" background to
+       flash on screen first. -->
+  <script>
+    if (new URLSearchParams(location.search).get("furniture") === "1") {
+      document.getElementById("intro-overlay").style.display = "none";
+    }
+  </script>
+
   <div id="furnitureGallery" class="furniture-gallery">
     <div class="furniture-frame">
       <!-- Title and per-item names are baked into the artwork itself now —
