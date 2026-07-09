@@ -1,3 +1,4 @@
 .vercel
 tools/node_modules
 tools/package-lock.json
+tools/__pycache__

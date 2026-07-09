@@ -107,7 +107,27 @@ def main():
         xform_api = UsdGeom.XformCommonAPI(default_prim)
         xform_api.SetScale(Gf.Vec3f(args.factor, args.factor, args.factor))
         apply_renames(stage, renames)
-        stage.GetRootLayer().Save()
+
+        # Recenter the footprint on the local origin — same rationale as the
+        # equivalent step in fix-glb-scale.mjs (see comment there): AR
+        # rotation gestures pivot around the file's raw origin, not the
+        # model's visual center, so a SketchUp/Blender export's arbitrary
+        # source-scene origin needs correcting here or AR rotation orbits a
+        # point nowhere near the model. Up-axis is read per-file rather than
+        # assumed Y, since Blender-originated exports are commonly Z-up.
+        up_axis = UsdGeom.GetStageUpAxis(stage)
+        axis_index = {"X": 0, "Y": 1, "Z": 2}[up_axis]
+        bbox_cache = UsdGeom.BBoxCache(Usd.TimeCode.Default(), [UsdGeom.Tokens.default_])
+        bbox = bbox_cache.ComputeWorldBound(default_prim).ComputeAlignedBox()
+        mn, mx = bbox.GetMin(), bbox.GetMax()
+        center = [(mn[i] + mx[i]) / 2 for i in range(3)]
+        translate, _, _, _, _ = xform_api.GetXformVectors(Usd.TimeCode.Default())
+        shift = [-center[i] if i != axis_index else 0.0 for i in range(3)]
+        xform_api.SetTranslate(Gf.Vec3d(
+            translate[0] + shift[0], translate[1] + shift[1], translate[2] + shift[2]
+        ))
+
+        stage.GetRootLayer().Export(usdc_name)
 
         os.makedirs(os.path.dirname(output_usdz) or ".", exist_ok=True)
         ok = UsdUtils.CreateNewUsdzPackage(usdc_name, output_usdz)
