@@ -143,6 +143,7 @@ const introName = document.getElementById("intro-name");
 const nameDisplay = document.getElementById("nameDisplay");
 const startBtn = document.getElementById("startBtn");
 const scanQrBtn = document.getElementById("scanQrBtn");
+const waBackBtn = document.getElementById("waBackBtn");
 
 /* ---------- furniture AR gallery ----------
    Shown once the chat story finishes, instead of resetting straight back to
@@ -364,6 +365,14 @@ function resetToIntro() {
   updateStoryProgress();
   showIntro();
 }
+
+// The chat header's back arrow (see index.html) was purely decorative
+// before this, matching WhatsApp's own chrome — this is the only way back
+// to the start screen mid-session; previously a visitor could only get there
+// by finishing the whole story (which routes through the furniture gallery
+// first, see revealNext's finish sequence) or via the furniture gallery's
+// own Done button. No confirmation prompt, matching that same button.
+waBackBtn.addEventListener("click", resetToIntro);
 
 // The matching hidden viewer (see buildFurnitureArViewers) already has its
 // src/ios-src set from page load, not from this click — so this only ever

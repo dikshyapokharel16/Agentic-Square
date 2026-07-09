@@ -158,6 +158,29 @@ model-viewer {
   color: #fff;
 }
 
+/* Was a plain decorative <i> matching WhatsApp's own chrome (like the video/
+   phone icons on the other end of this header); now the visitor's only way
+   back to the start screen mid-session (resetToIntro(), see main.js) — the
+   furniture gallery already has its own equivalent (#furnitureDoneBtn), this
+   is the same idea for the main chat/AR experience, which had no way back
+   out before finishing the whole story. Reset to a plain unstyled button so
+   it still looks like just the icon, but with a large enough tap target for
+   a touchscreen kiosk (the icon glyph itself is tiny at this header's
+   scale). */
+.wa-back-btn {
+  appearance: none;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 10px;
+  margin: -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .waheader .avatar {
   width: 13%;
   aspect-ratio: 1;
