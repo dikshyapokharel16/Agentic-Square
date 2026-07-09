@@ -78,6 +78,18 @@ function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
 }
 
+// iPadOS 13+ reports itself as "Macintosh" in the user agent string,
+// indistinguishable from a real Mac by UA alone — touch support is the only
+// reliable tell left. Used to skip Android/WebXR-only AR prep work (arGlb
+// preload/swap) that's pure overhead on a platform that always hands AR off
+// to Quick Look via ios-src instead.
+function isIOS() {
+  return (
+    /iP(hone|od|ad)/.test(navigator.platform) ||
+    (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 1)
+  );
+}
+
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -394,7 +406,13 @@ function activateFurnitureAR(idx) {
     // off whatever's currently loaded in the scene, so activating AR
     // before this piece's own (small, but non-zero download time) model
     // has loaded would place it using a stale/empty bounding sphere.
-    if (el.loaded) {
+    //
+    // None of that applies on iOS — Quick Look reads ios-src directly and
+    // ignores `src`/el.loaded entirely, so waiting on the Android-only glb
+    // here only delays Quick Look and lets that unrelated download compete
+    // for bandwidth with Quick Look's own ios-src fetch (see the matching
+    // iOS branch on the square viewer's AR button in createViewer).
+    if (isIOS() || el.loaded) {
       el.activateAR();
     } else {
       let started = false;
@@ -591,6 +609,21 @@ function createViewer(stage) {
   arButton.textContent = "View in Your Space";
   arButton.addEventListener("click", () => {
     const stageNow = stageAt(currentStage);
+    // iOS Quick Look reads ios-src directly (set once per stage, never
+    // reassigned here — see showStageInViewer) and never touches `src` at
+    // all, so the arGlb swap-and-wait below is pure overhead on iOS: it
+    // forces an extra multi-MB .glb download that competes for bandwidth
+    // with Quick Look's own ios-src fetch (this is what was showing up as a
+    // Quick Look "Zero KB" / stuck-loading preview on slower venue wifi),
+    // and it leaves the inline viewer's `src` swapped to the tiny AR-only
+    // model (wrong colors/scale) if the "not-presenting" swap-back in the
+    // ar-status listener ever misses firing on the way back from Quick Look.
+    // Skipping straight to activateAR() avoids all of that since there's
+    // nothing to swap or wait on for this platform.
+    if (isIOS()) {
+      viewer.activateAR();
+      return;
+    }
     if (!stageNow.arGlb) {
       viewer.activateAR();
       return;
@@ -718,17 +751,18 @@ function preloadStage(i) {
 }
 
 // Warm the cache for the *current* stage's AR files too, so tapping
-// "View AR" doesn't stall on a cold fetch before AR can launch. Both
-// formats, not just arGlb — iOS Quick Look reads arUsdz directly (never
-// arGlb/`src`, see the AR button handler in createViewer), so without this
-// a visitor's first AR tap on iOS still hit a cold multi-MB fetch despite
-// the arGlb-only preload here doing nothing for that platform at all.
+// "View AR" doesn't stall on a cold fetch before AR can launch. arUsdz is
+// fetched on every platform (iOS Quick Look reads it directly, never
+// arGlb/`src` — see the AR button handler in createViewer) so a visitor's
+// first AR tap on iOS isn't a cold multi-MB fetch. arGlb is skipped on iOS
+// entirely — Quick Look never touches it, so fetching it there would only
+// compete for bandwidth with the arUsdz fetch that iOS actually needs.
 const preloadedArStages = new Set();
 function preloadArGlb(i) {
   const stage = stageAt(i);
   if (!stage || preloadedArStages.has(i)) return;
   preloadedArStages.add(i);
-  if (stage.arGlb) fetch(withVersion(stage.arGlb)).catch(() => {});
+  if (stage.arGlb && !isIOS()) fetch(withVersion(stage.arGlb)).catch(() => {});
   if (stage.arUsdz) fetch(withVersion(stage.arUsdz)).catch(() => {});
 }
 
