@@ -540,6 +540,48 @@ model-viewer {
   }
 }
 
+/* ---------- portrait/narrow phone layout: stack instead of overlay ----------
+   The AR panel + floating phone mockup are laid out for a wide kiosk screen:
+   a full-bleed AR viewer with the phone chat mockup floating on top of it,
+   anchored to the right. On a narrow phone viewport the phone-wrap panel's
+   aspect-ratio-driven width grows to nearly the full screen width, so it
+   sits directly on top of the AR panel's own controls (the "View in Your
+   Space" button, the QR fallback) instead of floating beside them. Stack the
+   two panels vertically here instead so nothing overlaps. main.js's
+   positionArCaption/positionLevelCaption/centerViewerAroundVisibleArea have
+   a matching (max-width: 700px) check so their JS-driven positioning stops
+   assuming the AR panel spans the full viewport, which only held true for
+   the overlay layout this media query replaces. */
+@media (max-width: 700px) {
+  .split {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  #ar-panel {
+    position: relative;
+    inset: auto;
+    flex: 0 0 38vh;
+    flex: 0 0 38dvh;
+  }
+
+  #chat-panel.phone-wrap {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    flex: 0 0 auto;
+    height: auto;
+    width: min(88vw, calc(56vh * 9 / 19.5));
+    width: min(88vw, calc(56dvh * 9 / 19.5));
+    max-height: 56vh;
+    max-height: 56dvh;
+    margin: 8px auto 16px;
+    z-index: auto;
+  }
+}
+
 /* ---------- full-screen intro / onboarding ---------- */
 
 /* Shown once the chat story finishes instead of resetting straight to intro —
@@ -650,6 +692,29 @@ model-viewer {
 .furniture-ar-btn[data-idx="6"] { left: 66%;   top: 78%; }
 .furniture-ar-btn[data-idx="7"] { left: 94.3%; top: 78%; }
 
+/* Overlaid directly on the image, right under the baked-in title (not a
+   separate line taking its own layout space) — top: 11% is eyeballed to
+   sit just below where the desktop artwork's title ends. Declared here,
+   before the (max-width: 700px) block below, so that block's own
+   .furniture-hint override (a tighter top for the phone image's higher/
+   smaller baked-in title) actually wins at the same specificity — a
+   same-specificity rule declared *after* this one in source order would
+   otherwise always beat it regardless of which media query matched, which
+   is exactly what silently broke the phone override before this rule was
+   moved up here. */
+.furniture-hint {
+  position: absolute;
+  left: 50%;
+  top: 11%;
+  transform: translateX(-50%);
+  margin: 0;
+  width: 100%;
+  font-size: clamp(13px, 1.4vw, 16px);
+  color: #333;
+  text-align: center;
+  pointer-events: none;
+}
+
 /* Phone: FINAL FURNITURE Phone.png is portrait, 2 cols x 4 rows, and — not
    just a reflow of the desktop grid — the row order differs (Table Tennis/
    Jumping Brickwall come before Wooden Benches/Stepped Playground), so each
@@ -683,22 +748,6 @@ model-viewer {
   .furniture-hint {
     top: 3.8%;
   }
-}
-
-/* Overlaid directly on the image, right under the baked-in title (not a
-   separate line taking its own layout space) — top: 11% is eyeballed to
-   sit just below where the desktop artwork's title ends. */
-.furniture-hint {
-  position: absolute;
-  left: 50%;
-  top: 11%;
-  transform: translateX(-50%);
-  margin: 0;
-  width: 100%;
-  font-size: clamp(13px, 1.4vw, 16px);
-  color: #333;
-  text-align: center;
-  pointer-events: none;
 }
 
 .furniture-done-btn {

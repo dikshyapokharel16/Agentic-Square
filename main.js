@@ -6,6 +6,12 @@ let visitorName = "";
 let viewer = null;
 let currentStage = 0;
 
+// Mirrors styles.css's (max-width: 700px) breakpoint that switches the AR
+// panel + phone mockup from a full-bleed overlay to a stacked layout — the
+// two must stay in sync, since the JS positioning below only holds for one
+// layout or the other, not both.
+const MOBILE_STACK_QUERY = window.matchMedia("(max-width: 700px)");
+
 let POLL_STATE = {};
 let activePollIndex = null;
 let revealIdx = 0;
@@ -618,6 +624,14 @@ function centerViewerAroundVisibleArea() {
   const phone = document.querySelector(".phone-wrap");
   const root = document.getElementById("viewer-root");
   if (!phone || !root) return;
+  // Stacked mobile layout: the phone sits below the AR panel, not over its
+  // right edge, so there's no footprint to carve out — undo any padding
+  // left over from a wider layout instead of squishing the model for
+  // nothing.
+  if (MOBILE_STACK_QUERY.matches) {
+    root.style.paddingRight = "";
+    return;
+  }
   const phoneWidth = phone.getBoundingClientRect().width;
   root.style.paddingRight = phoneWidth ? `${phoneWidth + 24}px` : "";
 }
@@ -633,7 +647,21 @@ window.addEventListener("resize", centerViewerAroundVisibleArea);
 function positionArCaption() {
   const caption = document.getElementById("arCaption");
   const phone = document.querySelector(".phone-wrap");
-  if (!caption || !phone) return;
+  const panel = document.getElementById("ar-panel");
+  if (!caption || !phone || !panel) return;
+  // Stacked mobile layout: the phone sits below the AR panel instead of
+  // floating over its right edge, so there's no shared edge left to "tuck"
+  // the caption under — the window-relative math below assumes the AR
+  // panel spans the full viewport, which is only true for the overlay
+  // layout. Just center the caption near the panel's own bottom instead.
+  if (MOBILE_STACK_QUERY.matches) {
+    const panelRect = panel.getBoundingClientRect();
+    caption.style.left = "auto";
+    caption.style.right = `${Math.max(8, (panelRect.width - caption.offsetWidth) / 2)}px`;
+    caption.style.top = "auto";
+    caption.style.bottom = "16px";
+    return;
+  }
   const phoneRect = phone.getBoundingClientRect();
   const overlap = 36; // px the bubble's right edge tucks under the phone frame
   caption.style.left = "auto";
@@ -673,7 +701,12 @@ function findRowByIndex(idx) {
 // avatar column, covering it. A card can land at any row (not just a
 // fixed bottom spot), so it needs the extra clearance every time.
 function positionLevelCaption(anchorRow) {
-  if (!anchorRow) {
+  // Same reasoning as positionArCaption's mobile branch: a specific chat
+  // row's on-screen height is only meaningful to track against when the
+  // caption and the chat share the same visual space (the overlay layout).
+  // In the stacked layout they're in separate boxes, so fall back to the
+  // simple panel-centered spot instead of chasing the row.
+  if (!anchorRow || MOBILE_STACK_QUERY.matches) {
     positionArCaption();
     return;
   }
