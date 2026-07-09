@@ -470,6 +470,51 @@ document.querySelectorAll(".furniture-ar-btn").forEach((btn) => {
   btn.addEventListener("click", () => activateFurnitureAR(Number(btn.dataset.idx)));
 });
 
+/* ---------- idle screensaver ----------
+   App-wide "nobody's touched this in a while" overlay, independent of the
+   furniture gallery's own (shorter-scoped) idle timer above. Polls elapsed
+   time on an interval rather than juggling a setTimeout reset from every
+   possible interaction site, since "any touch anywhere, including scroll
+   drags that never fire a click" is much simpler to express as "was there
+   activity in the last tick" than as a pile of individual resetTimer() calls
+   scattered across every button/handler in the file. */
+const screensaver = document.getElementById("screensaver");
+const SCREENSAVER_IDLE_MS = 60000;
+let lastActivityAt = Date.now();
+
+function markActivity() {
+  lastActivityAt = Date.now();
+}
+
+// Capture phase so this still counts as activity even if some element's own
+// handler calls stopPropagation() on the way up (e.g. reply-keyboard keys).
+document.addEventListener("pointerdown", markActivity, { capture: true });
+document.addEventListener("scroll", markActivity, { capture: true, passive: true });
+
+setInterval(() => {
+  // Don't let a live AR session or an enlarged chat photo — both cases
+  // where the visitor is still present and engaged but isn't necessarily
+  // touching the page itself — count as idle time out from under them.
+  if (arPaused || lightboxOpen) {
+    markActivity();
+    return;
+  }
+  if (Date.now() - lastActivityAt >= SCREENSAVER_IDLE_MS) {
+    screensaver.classList.add("show");
+  }
+}, 1000);
+
+screensaver.addEventListener("pointerdown", () => {
+  markActivity();
+  screensaver.classList.remove("show");
+  // Same "clean slate for the next visitor" assumption as the furniture
+  // gallery's own idle timeout: whoever left this idle has walked away, so
+  // one tap on the screensaver goes all the way back to the first screen
+  // rather than just resuming wherever the previous visitor left off.
+  if (furnitureGallery.classList.contains("active")) hideFurnitureGallery();
+  else resetToIntro();
+});
+
 /* ---------- AR panel ---------- */
 
 function createViewer(stage) {

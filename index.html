@@ -180,6 +180,16 @@
        non-rendered element. -->
   <div id="furnitureArViewers"></div>
 
+  <!-- Idle "attract mode" overlay — shown after SCREENSAVER_IDLE_MS of no
+       touch anywhere in the app (see the idle-screensaver block in main.js),
+       covering whatever screen is currently up (intro, mid-chat, AR,
+       furniture gallery). A single tap anywhere on it resets the whole
+       kiosk back to the very first screen, on the assumption that a visitor
+       who let it go idle has walked away. -->
+  <div id="screensaver" class="screensaver">
+    <p class="screensaver-text">Touch to interact</p>
+  </div>
+
   <script src="main.js"></script>
 </body>
 </html>
