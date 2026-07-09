@@ -163,7 +163,10 @@ function buildFurnitureArViewers() {
     const el = document.createElement("model-viewer");
     el.className = "furniture-ar-viewer";
     el.setAttribute("ar", "");
-    el.setAttribute("ar-modes", "webxr scene-viewer quick-look");
+    // scene-viewer before webxr — see the matching comment on the square
+    // viewer's own createViewer() for why (WebXR's placement can land far
+    // from the visitor, needing a lot of manual dragging to fix).
+    el.setAttribute("ar-modes", "scene-viewer webxr quick-look");
     if (item.arGlb) el.setAttribute("src", withVersion(item.arGlb));
     if (item.arUsdz) el.setAttribute("ios-src", withVersion(item.arUsdz));
     // Assigning anything to the ar-button slot replaces model-viewer's own
@@ -440,7 +443,17 @@ function createViewer(stage) {
   if (stage.poster) viewer.setAttribute("poster", withVersion(stage.poster));
   viewer.setAttribute("alt", `${stage.name || "3D model"} — preview`);
   viewer.setAttribute("ar", "");
-  viewer.setAttribute("ar-modes", "webxr scene-viewer quick-look");
+  // scene-viewer before webxr: model-viewer's own in-page WebXR placement
+  // has a documented issue where the object can land far from the visitor
+  // (it bases initial placement on camera position, not a close hit-test),
+  // needing a lot of manual dragging to pull a ~1.8m model into a
+  // reasonable view — reported as "looks tiny/far away at first AR load,
+  // takes a lot of effort to fix" on Android, same on every stage
+  // regardless of Draco encoding, ruling out a file-level scale bug.
+  // Scene Viewer is Google's own separate, mature native AR app with much
+  // more reliable placement, and quick-look (iOS) is unaffected either way
+  // since Android never uses it and iOS always reads ios-src directly.
+  viewer.setAttribute("ar-modes", "scene-viewer webxr quick-look");
   viewer.setAttribute("ar-scale", "fixed");
   viewer.setAttribute("ar-placement", "floor");
   viewer.setAttribute("camera-controls", "");
