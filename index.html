@@ -34,9 +34,16 @@
 
     .furniture-frame {
       position: relative;
+      /* vh is the viewport height *without* a mobile browser's address bar
+         factored in - taller than what's actually visible, so sizing off it
+         alone overflows past the real bottom edge on a phone. dvh tracks the
+         actual visible viewport; the vh line above it is just the fallback
+         for browsers that don't support dvh. */
       width: min(100%, calc(100vh * (4000 / 2397)));
+      width: min(100%, calc(100dvh * (4000 / 2397)));
       aspect-ratio: 4000 / 2397;
       max-height: 100vh;
+      max-height: 100dvh;
     }
 
     .furniture-bg {
@@ -114,6 +121,7 @@
     @media (max-width: 700px) {
       .furniture-frame {
         width: min(100%, calc(100vh * (1125 / 2436)));
+        width: min(100%, calc(100dvh * (1125 / 2436)));
         aspect-ratio: 1125 / 2436;
       }
 
