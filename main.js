@@ -612,6 +612,23 @@ function createViewer(stage) {
         // AR model was briefly loaded (see DEFAULT_CAMERA_ORBIT above).
         viewer.cameraOrbit = DEFAULT_CAMERA_ORBIT;
         viewer.cameraTarget = DEFAULT_CAMERA_TARGET;
+      } else if (isIOS()) {
+        // iOS never sets arUsingSimpleModel (see the AR button handler
+        // below) since Quick Look reads ios-src directly and `src` is never
+        // touched for it — but Quick Look is a native full-screen AR
+        // takeover that reclaims the page's GPU/WebGL context while it's
+        // presenting, and coming back from it commonly leaves model-viewer's
+        // underlying WebGL context lost, rendering the inline model as solid
+        // black until something forces a reinit. Reassigning `src` to the
+        // exact same URL is a no-op to model-viewer's own dedup check, so it
+        // has to be cleared first to force a real reload — the model is
+        // already cached (by the browser and by model-viewer's own loader),
+        // so this is a fast reinit, not a real network refetch.
+        const url = withVersion(stageAt(currentStage).glb);
+        viewer.src = "";
+        requestAnimationFrame(() => {
+          viewer.src = url;
+        });
       }
       if (arPaused) {
         arPaused = false;
