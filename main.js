@@ -383,6 +383,9 @@ waBackBtn.addEventListener("click", resetToIntro);
 function activateFurnitureAR(idx) {
   const el = furnitureArViewers.children[idx];
   if (el) el.activateAR();
+  // Back-to-start stays hidden (see showFurnitureGallery) until the visitor
+  // has tried AR on at least one piece — reveal it the moment they do.
+  furnitureDoneBtn.classList.remove("hidden");
 }
 
 // Restarts the "nobody's touched this screen in a while" timer — called on
@@ -395,6 +398,11 @@ function resetFurnitureIdleTimer() {
 
 function showFurnitureGallery() {
   furnitureGallery.classList.add("active");
+  // Defensive: normally already hidden (a fresh visitor session never
+  // reaches this screen having tried AR yet), but guarantees the next
+  // visitor doesn't inherit a previous visitor's revealed state regardless
+  // of how this screen was reached.
+  furnitureDoneBtn.classList.add("hidden");
   resetFurnitureIdleTimer();
 }
 

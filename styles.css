@@ -787,6 +787,13 @@ model-viewer {
   cursor: pointer;
 }
 
+/* Stays hidden until the visitor has actually tried AR on at least one
+   piece (see activateFurnitureAR in main.js) — encourages browsing the
+   gallery first rather than leading with the exit. */
+.furniture-done-btn.hidden {
+  display: none;
+}
+
 .furniture-ar-viewer {
   position: absolute;
   width: 10px;
