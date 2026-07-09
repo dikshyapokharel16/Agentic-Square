@@ -625,6 +625,15 @@ model-viewer {
   justify-content: flex-start;
   gap: 14px;
   padding: 16px;
+  /* .furniture-frame's height budget (max-height: calc(100vh - 90px), see
+     below) assumes a specific aspect ratio; on a tablet wide/short enough
+     that the frame plus the Done button's 14px gap still exceeds the
+     viewport, there was previously no way to reach whatever overflowed —
+     this being position:fixed means the page's own scroll can't help, and
+     nothing here handled overflow itself. Reported as the newly-revealed
+     Done button (see furniture-done-btn.hidden) being completely
+     unreachable on an Android tablet. */
+  overflow-y: auto;
   opacity: 0;
   visibility: hidden;
   transition: opacity .5s ease, visibility .5s ease;
