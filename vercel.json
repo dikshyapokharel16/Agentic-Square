@@ -2,6 +2,7 @@
   "redirects": [
     {
       "source": "/",
+      "missing": [{ "type": "query", "key": "furniture" }],
       "destination": "/?furniture=1",
       "permanent": false
     }
