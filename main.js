@@ -4,6 +4,7 @@ let MESSAGES = [];
 let RAW_MESSAGES = []; // unpersonalized script, kept so a fresh visitor can re-personalize from scratch
 let visitorName = "";
 let viewer = null;
+let arButton = null; // the square viewer's own "View in Your Space" button — see updateArButtonVisibility
 let currentStage = 0;
 
 // Mirrors styles.css's (max-width: 700px) breakpoint that switches the AR
@@ -72,7 +73,7 @@ function stageAt(i) {
 // before a re-scale can keep serving the stale one for up to an hour.
 // Bump this whenever a stage's model file is regenerated so every deploy
 // forces a fresh fetch regardless of that cache.
-const MODEL_VERSION = "20";
+const MODEL_VERSION = "21";
 
 function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
@@ -531,6 +532,32 @@ screensaver.addEventListener("pointerdown", () => {
 
 /* ---------- AR panel ---------- */
 
+// iOS-only gate on which stages offer "View in Your Space" at all. Every
+// stage shares the exact same code path (see the isIOS() branches in
+// createViewer's AR button and its ar-status listener), but the round-trip
+// through Quick Look and back has turned out to be genuinely more fragile
+// the heavier the display model is — stage-00's website glb is ~1.6MB vs.
+// ~9-12MB for stages 01-03 (roughly 6-8x), so the forced reinit after
+// returning from Quick Look (see ar-status below) has that much more to
+// re-decode and re-upload to the GPU right as iOS is handing GPU control
+// back to the page, which is exactly when partial texture failures were
+// reported. Root cause measured 2026-07-10: stages 01-03 were shipping
+// ~1.5M vertices, 4,600-7,800 primitives (draw calls) and 109-136MB of
+// decompressed GPU texture memory each, vs. stage-00's 25k verts / 468
+// prims / ~88MB, which is why only stage 00 survived the round trip.
+// All stage models (and the AR glbs) have since been reprocessed with
+// tools/optimize-glb.mjs (~800k verts, ~10 prims, ~29MB textures each),
+// so every stage is enabled again. NOT yet confirmed on real iOS
+// hardware; if black textures reappear on a heavy stage, drop this back
+// to 0 to restore the old stage-00-only behavior while investigating.
+// Android is unaffected (this only ever gates the button, not the
+// underlying arGlb-swap AR path Android uses).
+const IOS_AR_MAX_STAGE = 3;
+function updateArButtonVisibility(stageIndex) {
+  if (!arButton) return;
+  arButton.classList.toggle("hidden", isIOS() && stageIndex > IOS_AR_MAX_STAGE);
+}
+
 function createViewer(stage) {
   const root = document.getElementById("viewer-root");
   root.innerHTML = "";
@@ -642,6 +669,12 @@ function createViewer(stage) {
         viewer.src = "";
         requestAnimationFrame(() => {
           viewer.src = url;
+          // A fresh src load makes model-viewer recompute its own "auto"
+          // camera framing from the model's bounding box, which is much
+          // further out than the hand-tuned default — same reason the
+          // Android swap-back above has to re-apply these explicitly.
+          viewer.cameraOrbit = DEFAULT_CAMERA_ORBIT;
+          viewer.cameraTarget = DEFAULT_CAMERA_TARGET;
         });
       }
       if (arPaused) {
@@ -680,7 +713,7 @@ function createViewer(stage) {
   // either way since it reads ios-src directly, never `src`. Positioning is
   // unaffected by leaving the named slot — `.ar-button`'s own
   // `position: absolute` (styles.css) already does the placement, not the slot.
-  const arButton = document.createElement("button");
+  arButton = document.createElement("button");
   arButton.className = "ar-button";
   arButton.textContent = "View in Your Space";
   arButton.addEventListener("click", () => {
@@ -697,6 +730,10 @@ function createViewer(stage) {
     // Skipping straight to activateAR() avoids all of that since there's
     // nothing to swap or wait on for this platform.
     if (isIOS()) {
+      // Defensive: the button itself is hidden on iOS for every stage past
+      // IOS_AR_MAX_STAGE (see updateArButtonVisibility) — this just guards
+      // against any click that slips through a visibility-update race.
+      if (currentStage > IOS_AR_MAX_STAGE) return;
       viewer.activateAR();
       return;
     }
@@ -761,6 +798,7 @@ function createViewer(stage) {
     viewer.src = targetUrl;
   });
   viewer.appendChild(arButton);
+  updateArButtonVisibility(currentStage);
 
   // Visible loading feedback — model files can be several MB, and swapping
   // `src` with no indicator at all reads as a frozen page rather than a model
@@ -871,6 +909,14 @@ function showStageInViewer(i) {
 
   viewer.src = withVersion(stage.glb);
   arUsingSimpleModel = false;
+  // Keyed off currentStage, not `i` — `i` can be a scroll-scrub preview
+  // index that never updates currentStage (see the comment above this
+  // function), and the AR button's own click handler already only ever
+  // AR-places stageAt(currentStage) regardless of what's being previewed,
+  // so the button's visibility has to track that same value or the two
+  // could disagree (button shown for a previewed stage 0, but a tap
+  // actually targets a different, AR-disabled currentStage).
+  updateArButtonVisibility(currentStage);
   if (stage.arUsdz) viewer.setAttribute("ios-src", withVersion(stage.arUsdz));
   else viewer.removeAttribute("ios-src");
   if (stage.poster) viewer.setAttribute("poster", withVersion(stage.poster));

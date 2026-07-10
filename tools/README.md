@@ -120,6 +120,60 @@ edgebreaker on write, which would silently undo a deliberate per-stage
 encoding choice (e.g. a stage switched to sequential to work around an
 Android decoder bug) if left unhandled.
 
+## `.glb` GPU-footprint optimization (`optimize-glb.mjs`)
+
+Run this on every processed `.glb` (website display models, AR stage models,
+furniture models) after `fix-glb-scale.mjs`. It exists because file size and
+GPU cost are almost unrelated for these models, and iOS Safari fails on GPU
+cost: a 2048x2048 WebP that's 0.1MB on disk is ~21MB decompressed on the GPU
+(raw RGBA + mipmaps), and when iPad Safari can't allocate a texture it fails
+*silently per-texture*, rendering just those surfaces black while geometry
+survives. Measured 2026-07-10: stages 01-03 shipped ~1.5M vertices,
+4,600-7,800 primitives (one draw call each) and 109-136MB of GPU texture
+memory per model, which is what was blacking out textures on iOS and making
+the Quick-Look-and-back reinit fail on every stage except the small stage-00.
+
+```
+node optimize-glb.mjs <in.glb> <out.glb> [--ratio=0.1] [--error=0.01] [--max-texture=1024]
+```
+
+Pipeline: dedup -> palette (folds flat-color materials into one shared
+palette texture so join can merge across them; alphaMode differences keep
+translucent glass separate) -> flatten + join (thousands of per-object
+primitives down to a handful of per-material draws) -> weld -> simplify
+(meshoptimizer) -> prune -> textures capped at 1024px -> Draco. Scale and
+recentering are untouched, so it's safe on already-shipped files.
+
+Two calibration notes from the 2026-07-10 run:
+
+- **Vertex reduction bottoms out around 50%, not the requested ratio.** The
+  SketchUp exports' hard-edge normals block welding across seams (weld only
+  merges byte-identical vertices in gltf-transform v4), so simplify is
+  topology-locked — raising `--error` from 0.01 to 0.03 gained ~100 vertices
+  out of 780k. Don't chase a lower ratio here; if a model genuinely needs
+  fewer polygons, decimate in Blender before export, same as the `.usdz`
+  advice below.
+- **The draw-call and texture wins are the ones that matter anyway**: 4,987
+  prims -> 10 and ~109MB -> ~29MB GPU textures on stage-01, with file size
+  8.68MB -> 1.55MB as a side effect.
+
+Verify with `inspect-glb-textures.mjs` (below); target profile is roughly
+stage-00's (~25k verts, single-digit prims after optimization, <40MB GPU
+textures) — the profile that has held up on real iOS hardware.
+
+## `.glb` texture/GPU inspection (`inspect-glb-textures.mjs`)
+
+`inspect-glb.mjs` prints materials only; this one prints what iOS actually
+chokes on — per-texture pixel dimensions and estimated decompressed GPU
+memory, plus total vertex and primitive counts:
+
+```
+node inspect-glb-textures.mjs <model.glb> [more.glb ...]
+```
+
+Use it before assuming a model is "small" because its file size is small —
+Draco and WebP hide an order of magnitude between disk and GPU.
+
 ## `.usdz` mesh deduplication (repeated objects)
 
 SketchUp/Blender exports for this project don't preserve component/instance
