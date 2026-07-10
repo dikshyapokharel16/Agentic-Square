@@ -27,19 +27,31 @@ def resize_textures(workdir):
     renames = {}
     for path in glob.glob(os.path.join(workdir, "**", "textures", "*.*"), recursive=True):
         ext = os.path.splitext(path)[1].lower()
-        if ext not in (".png", ".jpg", ".jpeg"):
+        if ext not in (".png", ".jpg", ".jpeg", ".webp"):
             continue  # leave .exr and anything else untouched
         with Image.open(path) as img:
             oversized = img.width > MAX_TEXTURE_SIZE[0] or img.height > MAX_TEXTURE_SIZE[1]
             has_alpha = "A" in img.mode and img.getchannel("A").getextrema() != (255, 255)
-            if not oversized and ext != ".png":
+            if not oversized and ext in (".jpg", ".jpeg"):
                 continue
             before = os.path.getsize(path)
             if oversized:
                 img.thumbnail(MAX_TEXTURE_SIZE, Image.LANCZOS)
-            if ext == ".png" and not has_alpha:
-                new_path = os.path.splitext(path)[0] + ".jpg"
-                img.convert("RGB").save(new_path, quality=85, optimize=True)
+            # RealityKit/Quick Look cannot read WebP at all (it silently
+            # breaks the material, unlike <model-viewer> which supports it),
+            # and PNG barely compresses this photographic content — so
+            # opaque PNG/WebP becomes JPEG, alpha-carrying WebP becomes PNG.
+            target_ext = None
+            if ext in (".png", ".webp") and not has_alpha:
+                target_ext = ".jpg"
+            elif ext == ".webp":
+                target_ext = ".png"
+            if target_ext:
+                new_path = os.path.splitext(path)[0] + target_ext
+                if target_ext == ".jpg":
+                    img.convert("RGB").save(new_path, quality=85, optimize=True)
+                else:
+                    img.save(new_path, optimize=True)
                 os.remove(path)
                 rel_old = os.path.relpath(path, workdir).replace(os.sep, "/")
                 rel_new = os.path.relpath(new_path, workdir).replace(os.sep, "/")

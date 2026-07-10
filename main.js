@@ -73,7 +73,7 @@ function stageAt(i) {
 // before a re-scale can keep serving the stale one for up to an hour.
 // Bump this whenever a stage's model file is regenerated so every deploy
 // forces a fresh fetch regardless of that cache.
-const MODEL_VERSION = "21";
+const MODEL_VERSION = "22";
 
 function withVersion(url) {
   return url ? `${url}?v=${MODEL_VERSION}` : url;
@@ -545,14 +545,19 @@ screensaver.addEventListener("pointerdown", () => {
 // ~1.5M vertices, 4,600-7,800 primitives (draw calls) and 109-136MB of
 // decompressed GPU texture memory each, vs. stage-00's 25k verts / 468
 // prims / ~88MB, which is why only stage 00 survived the round trip.
-// All stage models (and the AR glbs) have since been reprocessed with
-// tools/optimize-glb.mjs (~800k verts, ~10 prims, ~29MB textures each),
-// so every stage is enabled again. NOT yet confirmed on real iOS
-// hardware; if black textures reappear on a heavy stage, drop this back
-// to 0 to restore the old stage-00-only behavior while investigating.
-// Android is unaffected (this only ever gates the button, not the
-// underlying arGlb-swap AR path Android uses).
-const IOS_AR_MAX_STAGE = 3;
+// The display .glbs have since been optimized (tools/optimize-glb.mjs),
+// which fixes the inline black-texture side of this — but the stages'
+// *Quick Look* side stays off by explicit decision (2026-07-10): the
+// original stage .usdz files lag hard in Quick Look (4,500-7,600 draw
+// calls, 1.2M+ points at runtime), and the regenerated lightweight
+// versions (tools/blender-glb-to-usdz.py) were rejected on visual
+// quality for the stages, so there is currently no stage-01..03 .usdz
+// that is both smooth and good-looking. Stage 00's .usdz is small and
+// fine, so it keeps AR. Raising this cap requires new, genuinely
+// lighter stage .usdz files first (likely re-exports decimated at the
+// source in Blender). Android is unaffected (this only ever gates the
+// button, not the underlying arGlb-swap AR path Android uses).
+const IOS_AR_MAX_STAGE = 0;
 function updateArButtonVisibility(stageIndex) {
   if (!arButton) return;
   arButton.classList.toggle("hidden", isIOS() && stageIndex > IOS_AR_MAX_STAGE);
@@ -877,7 +882,10 @@ function preloadArGlb(i) {
   if (!stage || preloadedArStages.has(i)) return;
   preloadedArStages.add(i);
   if (stage.arGlb && !isIOS()) fetch(withVersion(stage.arGlb)).catch(() => {});
-  if (stage.arUsdz) fetch(withVersion(stage.arUsdz)).catch(() => {});
+  // On iOS, stages past IOS_AR_MAX_STAGE never show the AR button, so
+  // prefetching their multi-MB .usdz would be pure wasted bandwidth on
+  // venue wifi.
+  if (stage.arUsdz && !(isIOS() && i > IOS_AR_MAX_STAGE)) fetch(withVersion(stage.arUsdz)).catch(() => {});
 }
 
 function applyStage(i) {

@@ -76,15 +76,12 @@ quality loss. Converting format means the USD material's texture references
 get rewired automatically to the new filename — this happens in-script, you
 don't need to do anything extra.
 
-**Known limitation: geometry is not compressed or simplified for `.usdz`.**
-Unlike `.glb` (Draco + meshoptimizer), there's no mesh-compression tool in
-this pipeline for USD — file size scales directly with polygon count. Heavy
-raw exports (stage-01..03: 73MB+ of raw mesh alone) stay heavy after this
-script since only textures/scale get fixed, not geometry. If a model needs
-to be smaller and `dedupe-usdz-mesh.py` below doesn't apply (no repeated
-objects), decimate it in Blender (Decimate modifier, ~0.3-0.5 ratio) *before*
-exporting to `.usdz` — reducing polygon count at the source is the only
-remaining fix.
+**Known limitation: geometry is not compressed or simplified for `.usdz`**
+by this script — but `blender-glb-to-usdz.py` (below) now covers that:
+rather than fixing a heavy raw `.usdz` export, regenerate the `.usdz` from
+the already-optimized `.glb`. Use that route whenever a `.usdz` feels heavy
+or laggy in Quick Look; this script remains the right tool only for scaling
+a fresh raw export that's otherwise light.
 
 ## Recentering (AR rotation pivot)
 
@@ -173,6 +170,47 @@ node inspect-glb-textures.mjs <model.glb> [more.glb ...]
 
 Use it before assuming a model is "small" because its file size is small —
 Draco and WebP hide an order of magnitude between disk and GPU.
+
+## `.usdz` regeneration from optimized `.glb` (`blender-glb-to-usdz.py`)
+
+The Quick Look lag fix. Measured 2026-07-10, the stage `.usdz` files carried
+4,452-7,627 mesh prims (one RealityKit draw call each) and 1.2-1.3M points —
+the crate-level dedup below hides repeated geometry *on disk*, but Quick
+Look still expands and renders every copy, so the files looked small (5-7MB)
+while lagging hard on-device. Since the `.glb` side already gets fully
+optimized (`optimize-glb.mjs`: single-digit prims, 1024px textures, correct
+scale and recentering), the fix is to regenerate the `.usdz` *from that
+optimized `.glb`* instead of trying to repair the raw `.usdz` export:
+
+```
+blender -b -P blender-glb-to-usdz.py -- <in.glb> <out.usdz> [decimate_ratio=0.4] [weld_dist=0.0005]
+python fix-usdz-scale.py <out.usdz> <out.usdz> --factor 1.0
+```
+
+(Blender is not on PATH on this machine — it lives at
+`D:\Softwares\Blender Software Installation file\blender.exe`.)
+
+Step 1 (Blender headless) welds seams with a *distance* weld — this is the
+step the `.glb` pipeline can't do (gltf-transform v4's weld is exact-match
+only, and SketchUp's hard-edge seams block it), and it's why decimation
+works here after plateauing at ~50% in `optimize-glb.mjs`. **Calibration
+warning (2026-07-10):** the default ratio 0.4 visibly mangled close-up
+detail — the stage runs (787k -> 40-55k verts) were rejected on visual
+quality (their iOS AR is disabled instead; see CLAUDE.md), and the Stepped
+Playground only passed review at a gentle `0.9 0.0002`, which still cut its
+file 14.9MB -> 3.8MB because welding does most of the work. Start gentle
+and render-check (a headless Blender render of the .usdz works; see git
+log for the scratchpad script) before trusting any ratio. Step 2
+exists because Blender exports the `.glb`'s WebP textures as-is and
+**RealityKit/Quick Look cannot read WebP** (the material silently breaks) —
+`fix-usdz-scale.py` converts them (opaque -> JPEG, alpha -> PNG) and rewires
+the USD material references; `--factor 1.0` leaves the already-correct
+scale alone while its recentering pass runs as a harmless no-op.
+
+Always verify with `inspect-usdz.py` afterwards: expect the same world-space
+size as the source `.glb` (~1.8m longest side for stages, true 1:1 for
+furniture) — the up-axis differs from hand-exported files (Z instead of Y)
+but is carried in stage metadata, which Quick Look respects.
 
 ## `.usdz` mesh deduplication (repeated objects)
 
